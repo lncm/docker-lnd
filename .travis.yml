@@ -1,0 +1,33 @@
+sudo: required
+
+dist: xenial
+
+services:
+  - docker
+
+language: bash
+
+before_install:
+  - mkdir -p ~/.docker
+  - >
+    echo '{ "experimental": "enabled" }' > ~/.docker/config.json
+  - sudo systemctl restart docker
+  - docker version
+
+install:
+  - wget -N https://github.com/multiarch/qemu-user-static/releases/download/v3.0.0/x86_64_qemu-arm-static.tar.gz
+  - tar -xvf x86_64_qemu-arm-static.tar.gz
+  - cp qemu-arm-static v0.5-beta/
+
+before_script:
+  - docker run --rm --privileged multiarch/qemu-user-static:register
+  - sed -ie 's/FROM alpine/FROM arm32v6\/alpine/g' v0.5-beta/Dockerfile
+  - sed -ie 's/FROM golang/FROM arm32v6\/golang/g' v0.5-beta/Dockerfile
+
+script:
+  - docker build --no-cache -t lnd v0.5-beta/
+  - >
+    if [ -n "$TRAVIS_TAG" ]; then
+      travis_retry timeout 5m echo "$DOCKER_PASS" | docker login -u="$DOCKER_USER" --password-stdin
+      ./travis-deploy.sh
+    fi
