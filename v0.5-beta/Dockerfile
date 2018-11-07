@@ -1,6 +1,8 @@
 FROM golang:1.11-alpine as builder
 
-COPY qemu-* /usr/bin/
+ARG arch=amd64
+
+ENV PKG=github.com/lightningnetwork/lnd/
 
 # Copy in the local repository to build from, and also get git
 RUN apk add --no-cache git make
@@ -12,16 +14,18 @@ RUN git clone https://github.com/lightningnetwork/lnd.git
 # queries required to connect to linked containers succeed.
 ENV GODEBUG netdns=cgo
 
+RUN go get -u github.com/golang/dep/cmd/dep
+
+WORKDIR /go/src/${PKG}/
+
 # Install dependencies and install/build lnd.
-RUN cd /go/src/github.com/lightningnetwork/lnd \
-&&  git checkout v0.5-beta \
-&&  make \
-&&  make install
+RUN git checkout v0.5-beta
+RUN dep ensure
+RUN env GOOS=linux GOARCH=arm GOARM=6 go build -o /go/bin/lnd -ldflags "-X main.Commit=$(git rev-parse HEAD)" .
+RUN env GOOS=linux GOARCH=arm GOARM=6 go build -o /go/bin/lncli -ldflags "-X main.Commit=$(git rev-parse HEAD)" ./cmd/...
 
 # Start a new, final image to reduce size.
 FROM alpine as final
-
-COPY qemu-* /usr/bin/
 
 LABEL maintainer.0="nolim1t <nolim1t.co>" \
       maintainer.1="Damian Mee (@meeDamian)"

@@ -5,6 +5,10 @@ dist: xenial
 services:
   - docker
 
+env:
+  matrix:
+    - ARCH=arm
+
 language: bash
 
 before_install:
@@ -25,7 +29,7 @@ before_script:
   - sed -ie 's/FROM golang/FROM arm32v6\/golang/g' v0.5-beta/Dockerfile
 
 script:
-  - docker build --no-cache -t lnd v0.5-beta/
+  - docker build --no-cache -t lnd --build-arg "arch=$ARCH" v0.5-beta/
   - >
     if [ -n "$TRAVIS_TAG" ]; then
       travis_retry timeout 5m echo "$DOCKER_PASS" | docker login -u="$DOCKER_USER" --password-stdin
