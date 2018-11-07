@@ -9,6 +9,8 @@ RUN mkdir -p /go/src/github.com/lightningnetwork
 WORKDIR /go/src/github.com/lightningnetwork
 RUN git clone https://github.com/lightningnetwork/lnd.git
 
+RUN git checkout v0.5-beta
+
 # Force Go to use the cgo based DNS resolver. This is required to ensure DNS
 # queries required to connect to linked containers succeed.
 ENV GODEBUG netdns=cgo
