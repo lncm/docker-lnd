@@ -1,6 +1,7 @@
 FROM golang:1.11-alpine as builder
 
-MAINTAINER nolim1t <nolim1t.co>
+LABEL maintainer.0="nolim1t <nolim1t.co>" \
+      maintainer.1="Damian Mee (@meeDamian)"
 
 # Copy in the local repository to build from, and also get git
 RUN apk add --no-cache git make
