@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-image="meedamian/lnd"
+image="lncm/lnd"
 docker tag lnd "$image:linux-arm-$TRAVIS_TAG"
 docker push "$image:linux-arm-$TRAVIS_TAG"
 

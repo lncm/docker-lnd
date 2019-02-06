@@ -21,15 +21,15 @@ before_install:
 install:
   - wget -N https://github.com/multiarch/qemu-user-static/releases/download/v3.0.0/x86_64_qemu-arm-static.tar.gz
   - tar -xvf x86_64_qemu-arm-static.tar.gz
-  - cp qemu-arm-static v0.5-beta/
+  - cp qemu-arm-static v0.5.2-beta/
 
 before_script:
   - docker run --rm --privileged multiarch/qemu-user-static:register
-  - sed -ie 's/FROM alpine/FROM arm32v6\/alpine/g' v0.5-beta/Dockerfile
-  - sed -ie 's/FROM golang/FROM arm32v6\/golang/g' v0.5-beta/Dockerfile
+  - sed -ie 's/FROM alpine/FROM arm32v6\/alpine/g' v0.5.2-beta/Dockerfile
+  - sed -ie 's/FROM golang/FROM arm32v6\/golang/g' v0.5.2-beta/Dockerfile
 
 script:
-  - docker build --no-cache -t lnd --build-arg "arch=$ARCH" v0.5-beta/
+  - docker build --no-cache -t lnd --build-arg "arch=$ARCH" v0.5.2-beta/
   - >
     if [ -n "$TRAVIS_TAG" ]; then
       travis_retry timeout 5m echo "$DOCKER_PASS" | docker login -u="$DOCKER_USER" --password-stdin
