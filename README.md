@@ -1,6 +1,6 @@
 # docker-lnd
 
-![](https://img.shields.io/microbadger/image-size/lncm/lnd/0.5.2.svg?style=flat) ![](https://img.shields.io/docker/pulls/lncm/lnd.svg?style=flat)
+[![Build Status](https://travis-ci.com/lncm/docker-lnd.svg)](https://travis-ci.com/lncm/docker-lnd) ![](https://img.shields.io/microbadger/image-size/lncm/lnd/0.5.2.svg?style=flat) ![](https://img.shields.io/docker/pulls/lncm/lnd.svg?style=flat)
 
 This Dockerfile is based on the [Dockerfile] officially provided within the `lnd` repo. 
 
