@@ -6,7 +6,7 @@ image="lncm/lnd"
 docker tag lnd "$image:${TRAVIS_TAG}-linux-$1"
 docker push "$image:${TRAVIS_TAG}-linux-$1"
 
-if [[ "$1" -ne "arm" ]]; then
+if [[ "$1" != "arm" ]]; then
     exit 0
 fi
 
