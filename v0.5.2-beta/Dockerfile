@@ -8,24 +8,25 @@ ENV GODEBUG netdns=cgo
 RUN apk add --no-cache --update alpine-sdk \
     git \
     make \
-    gcc
+    gcc \
+    ca-certificates
 
 # Build the binaries
-RUN  git clone -b v0.5.2-beta-rc7 --depth 1 https://github.com/lightningnetwork/lnd \
-&&  cd lnd \
-&&  make \
-&&  make install
+RUN  git clone -b v0.5.2-beta --depth 1 https://github.com/lightningnetwork/lnd \
+    &&  cd lnd
+
+# TODO: replace this with native arch-specific GO
+RUN  make
+    &&  make install
 
 
 # Start a new, final image.
-FROM alpine as final
+FROM scratch as final
+
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 # Define a root volume for data persistence.
 VOLUME /root/.lnd
-
-# Add bash and ca-certs, for quality of life and SSL-related reasons.
-RUN apk --no-cache add \
-    ca-certificates
 
 # Copy the binaries from the builder image.
 COPY --from=builder /go/bin/lncli /bin/
