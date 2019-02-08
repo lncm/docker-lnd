@@ -21,8 +21,9 @@ before_install:
 
 before_script:
   - >
-    if [[ "${ARCH}" -eq "arm" ]]; then
+    if [ "${ARCH}" = "arm" ]; then
       sed -ie 's/FROM alpine/FROM arm32v6\/alpine/g' 0.5/Dockerfile
+      echo "Dockerfile modified"
     fi
 
 script:
