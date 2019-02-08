@@ -15,9 +15,12 @@ RUN apk add --no-cache --update alpine-sdk \
 # TODO: Add content hash validation upon source download; see lncm/docker-lnd#5
 RUN git clone -b v0.5.2-beta --depth 1 https://github.com/lightningnetwork/lnd
 
-# TODO: replace this with native arch-specific GO
-RUN  make
-    &&  make install
+# Build the binaries
+RUN cd lnd \
+    && PKG=github.com/lightningnetwork/lnd \
+    && LDFLAGS="-X ${PKG}/build.Commit=$(git describe --abbrev=40 --dirty)" \
+    && go install -v -ldflags "${LDFLAGS}" ${PKG} \
+    && go install -v -ldflags "${LDFLAGS}" ${PKG}/cmd/lncli
 
 
 # Start a new, final image.
