@@ -1,4 +1,4 @@
-FROM golang:alpine as builder
+FROM golang:1.11-alpine3.9 as builder
 
 # Force Go to use the cgo based DNS resolver. This is required to ensure DNS
 # queries required to connect to linked containers succeed.
@@ -11,9 +11,9 @@ RUN apk add --no-cache --update alpine-sdk \
     gcc \
     ca-certificates
 
-# Build the binaries
-RUN  git clone -b v0.5.2-beta --depth 1 https://github.com/lightningnetwork/lnd \
-    &&  cd lnd
+# fetch lnd source code
+# TODO: Add content hash validation upon source download; see lncm/docker-lnd#5
+RUN git clone -b v0.5.2-beta --depth 1 https://github.com/lightningnetwork/lnd
 
 # TODO: replace this with native arch-specific GO
 RUN  make
@@ -21,7 +21,7 @@ RUN  make
 
 
 # Start a new, final image.
-FROM scratch as final
+FROM alpine:3.9 as final
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
