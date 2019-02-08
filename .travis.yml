@@ -20,7 +20,10 @@ before_install:
   - docker version
 
 before_script:
-  - sed -ie 's/FROM alpine/FROM arm32v6\/alpine/g' 0.5/Dockerfile
+  - >
+    if [[ "${ARCH}" -eq "arm" ]]; then
+      sed -ie 's/FROM alpine/FROM arm32v6\/alpine/g' 0.5/Dockerfile
+    fi
 
 script:
   - docker build --no-cache -t lnd --build-arg "goarch=${ARCH}" 0.5/
