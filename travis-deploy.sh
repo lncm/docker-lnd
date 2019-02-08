@@ -6,12 +6,17 @@ image="lncm/lnd"
 docker tag lnd "$image:${TRAVIS_TAG}-linux-arm"
 docker push "$image:${TRAVIS_TAG}-linux-arm"
 
+if [[ "$1" -ne "arm" ]]; then
+    exit 0
+fi
+
 set +e
 if [[ "$(docker images -q "$image:${TRAVIS_TAG}-linux-amd64" 2> /dev/null)" == "" ]]; then
     sleep 15
     echo "waiting for $image:${TRAVIS_TAG}-linux-amd64 to finish building…"
 fi
 set -e
+
 
 echo "Pushing manifest $image:${TRAVIS_TAG}"
 docker -D manifest create "$image:${TRAVIS_TAG}" \
