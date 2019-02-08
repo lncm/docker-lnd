@@ -36,6 +36,8 @@ RUN cd lnd \
 # Start a new, final image.
 FROM alpine:3.9 as final
 
+LABEL maintainer="Damian Mee (@meeDamian)"
+
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 # Copy the binaries from the builder image.
