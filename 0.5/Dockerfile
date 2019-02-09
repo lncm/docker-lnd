@@ -48,7 +48,7 @@ COPY --from=builder /go/bin/lnd /bin/
 VOLUME /root/.lnd
 
 # Expose lnd ports (p2p, rpc).
-EXPOSE 9735 10009
+EXPOSE 8080 9735 10009
 
 # Specify the start command and entrypoint as the lnd daemon.
 ENTRYPOINT ["lnd"]
