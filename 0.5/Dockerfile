@@ -36,6 +36,7 @@ RUN if [[ -d /go/bin/linux_arm/ ]]; then mv /go/bin/linux_arm/* /go/bin/; rmdir 
 # shrink output binaries
 RUN upx -v /go/bin/*
 
+
 # Start a new, final image
 FROM alpine:3.9 as final
 
