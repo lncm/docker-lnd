@@ -31,7 +31,7 @@ RUN cd lnd \
     && make install
 
 # move arm binaries to the "standard" location, for ease of copying in the next stage
-RUN if [[ -d /go/bin/linux_arm/ ]]; then mv /go/bin/linux_arm/* /go/bin/; fi
+RUN if [[ -d /go/bin/linux_arm/ ]]; then mv /go/bin/linux_arm/* /go/bin/; rmdir /go/bin/linux_arm/; fi
 
 # shrink output binaries
 RUN upx -v /go/bin/*
