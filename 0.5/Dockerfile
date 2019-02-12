@@ -27,27 +27,26 @@ RUN echo "GOOS:${GOOS} GOARCH:${GOARCH} GOARM:${GOARM}"
 
 # Build the binaries
 RUN cd lnd \
-    && PKG=github.com/lightningnetwork/lnd \
-    && LDFLAGS="-X ${PKG}/build.Commit=$(git describe --abbrev=40 --dirty)" \
-    && go build -v -ldflags "${LDFLAGS}" -o /go/bin/lnd ${PKG} \
-    && go build -v -ldflags "${LDFLAGS}" -o /go/bin/lncli ${PKG}/cmd/lncli
+    && make install
+
+# move arm binaries to the "standard" location, for ease of copying in the next stage
+RUN if [[ -d /go/bin/linux_arm/ ]]; then mv /go/bin/linux_arm/* /go/bin/; fi
 
 
-# Start a new, final image.
+# Start a new, final image
 FROM alpine:3.9 as final
 
 LABEL maintainer="Damian Mee (@meeDamian)"
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
-# Copy the binaries from the builder image.
-COPY --from=builder /go/bin/lncli /bin/
-COPY --from=builder /go/bin/lnd /bin/
+# Copy binaries from the builder image.
+COPY --from=builder /go/bin/* /bin/
 
 # Define a root volume for data persistence.
 VOLUME /root/.lnd
 
-# Expose lnd ports (p2p, rpc).
+# Expose lnd ports (rest, p2p, rpc respectively).
 EXPOSE 8080 9735 10009
 
 # Specify the start command and entrypoint as the lnd daemon.
