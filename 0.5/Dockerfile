@@ -8,7 +8,8 @@ ENV GODEBUG netdns=cgo
 RUN apk add --no-cache --update alpine-sdk \
     git \
     gcc \
-    ca-certificates
+    ca-certificates \
+    upx
 
 # fetch lnd source code
 # TODO: Add content hash validation upon source download; see lncm/docker-lnd#5
@@ -32,6 +33,8 @@ RUN cd lnd \
 # move arm binaries to the "standard" location, for ease of copying in the next stage
 RUN if [[ -d /go/bin/linux_arm/ ]]; then mv /go/bin/linux_arm/* /go/bin/; fi
 
+# shrink output binaries
+RUN upx -v /go/bin/*
 
 # Start a new, final image
 FROM alpine:3.9 as final
