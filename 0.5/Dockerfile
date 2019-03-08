@@ -47,6 +47,9 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 # Copy binaries from the builder image.
 COPY --from=builder /go/bin/* /bin/
 
+# Create symlink for NAT to work
+RUN ln -s /sbin/ip /usr/bin/ip
+
 # Define a root volume for data persistence.
 VOLUME /root/.lnd
 
