@@ -22,12 +22,12 @@ before_install:
 before_script:
   - >
     if [ "${ARCH}" = "arm" ]; then
-      sed -ie 's/FROM alpine/FROM arm32v6\/alpine/g' 0.5/Dockerfile
+      sed -ie 's/FROM alpine/FROM arm32v6\/alpine/g' 0.6/Dockerfile
       echo "Dockerfile modified"
     fi
 
 script:
-  - docker build --no-cache -t lnd --build-arg "goarch=${ARCH}" 0.5/
+  - docker build --no-cache -t lnd --build-arg "goarch=${ARCH}" 0.6/
   - >
     if [ -n "${TRAVIS_TAG}" ]; then
       travis_retry timeout 5m echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
