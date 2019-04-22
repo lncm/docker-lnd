@@ -7,7 +7,7 @@ if [[ ! -z "${ARCH}" ]]; then
 
     # Push image, if tag was specified
     if [[ -n "${TRAVIS_TAG}" ]]; then
-        travis_retry timeout 5m echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
+        echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
 
         docker tag lnd "${SLUG}:${TRAVIS_TAG}-linux-${ARCH}"
         docker push "${SLUG}:${TRAVIS_TAG}-linux-${ARCH}"
