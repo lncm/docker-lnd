@@ -1,20 +1,22 @@
 #!/bin/bash
 set -e
 
-
+# Build image for specified architecture, if specified
 if [[ ! -z "${ARCH}" ]]; then
-  docker build --no-cache -t lnd --build-arg "goarch=${ARCH}" "${PREFIX}/"
+    docker build --no-cache -t lnd --build-arg "goarch=${ARCH}" "${PREFIX}/"
 
-  if [[ -n "${TRAVIS_TAG}" ]]; then
-    travis_retry timeout 5m echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
+    # Push image, if tag was specified
+    if [[ -n "${TRAVIS_TAG}" ]]; then
+        travis_retry timeout 5m echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
 
-    docker tag lnd "${SLUG}:${TRAVIS_TAG}-linux-${ARCH}"
-    docker push "${SLUG}:${TRAVIS_TAG}-linux-${ARCH}"
-  fi
+        docker tag lnd "${SLUG}:${TRAVIS_TAG}-linux-${ARCH}"
+        docker push "${SLUG}:${TRAVIS_TAG}-linux-${ARCH}"
+    fi
 
-  exit 0
+    exit 0
 fi
 
+# This happens when no ARCH was provided.  Specifically in the deploy job.
 echo "Saving images"
 
 LATEST_ARM="${SLUG}:${TRAVIS_TAG}-linux-arm"
