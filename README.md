@@ -1,6 +1,6 @@
 # docker-lnd
 
-[![Build Status](https://travis-ci.com/lncm/docker-lnd.svg)](https://travis-ci.com/lncm/docker-lnd) ![](https://img.shields.io/microbadger/image-size/lncm/lnd/0.5.2.svg?style=flat) ![](https://img.shields.io/docker/pulls/lncm/lnd.svg?style=flat)
+[![Build Status](https://travis-ci.com/lncm/docker-lnd.svg)](https://travis-ci.com/lncm/docker-lnd) ![](https://img.shields.io/microbadger/image-size/lncm/lnd/0.6.0.svg?style=flat) ![](https://img.shields.io/docker/pulls/lncm/lnd.svg?style=flat)
 
 This Dockerfile is based on the [Dockerfile] officially provided within the `lnd` repo. 
 
@@ -16,9 +16,9 @@ The changes from upstream include:
 
 ## Tags
 
-* `latest`, `0.5.2` - currently _latest_ version of lnd for both `arm` and `amd64`
-* `0.5.2-linux-arm` - LND version 0.5.2 for `arm` architecture, built on Travis ([log][log-arm])
-* `0.5.2-linux-amd64` - LND version 0.5.2 for `amd64` architecture, built on Travis ([log][log-amd64])
+* `latest`, `0.6`, `0.6.0` - currently _latest_ version of lnd for both `arm` and `amd64`
+* `0.6.0-linux-arm` - LND version 0.6.0 for `arm` architecture, built on Travis ([log][log-arm])
+* `0.6.0-linux-amd64` - LND version 0.6.0 for `amd64` architecture, built on Travis ([log][log-amd64])
 
 [log-arm]: https://travis-ci.com/lncm/docker-lnd/jobs/176378197
 [log-amd64]: https://travis-ci.com/lncm/docker-lnd/jobs/176378198
@@ -32,7 +32,7 @@ The changes from upstream include:
 First pull the image from [Docker Hub]:
 
 ```bash
-docker pull lncm/lnd:0.5.2
+docker pull lncm/lnd:0.6
 ```
 
 > **NOTE:** Running above will automatically choose native architecture of your CPU.
@@ -51,7 +51,7 @@ docker run -it --rm \
     -p 10009:10009 \
     --name lnd \
     --detach \
-    lncm/lnd:0.5.2
+    lncm/lnd:0.6
 ```
 
 That will run lnd such that:
