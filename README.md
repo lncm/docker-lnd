@@ -16,12 +16,13 @@ The changes from upstream include:
 
 ## Tags
 
-* `latest`, `0.6`, `0.6.0` - currently _latest_ version of lnd for both `arm` and `amd64`
+* `latest`, `0.6`, `0.6.0` - currently _latest_ version of lnd for both `arm` and `amd64` ([log][log-agg])
 * `0.6.0-linux-arm` - LND version 0.6.0 for `arm` architecture, built on Travis ([log][log-arm])
 * `0.6.0-linux-amd64` - LND version 0.6.0 for `amd64` architecture, built on Travis ([log][log-amd64])
 
-[log-arm]: https://travis-ci.com/lncm/docker-lnd/jobs/176378197
-[log-amd64]: https://travis-ci.com/lncm/docker-lnd/jobs/176378198
+[log-arm]: https://travis-ci.com/lncm/docker-lnd/jobs/194675662
+[log-amd64]: https://travis-ci.com/lncm/docker-lnd/jobs/194675661
+[log-agg]: https://travis-ci.com/lncm/docker-lnd/jobs/194675663
 
 
 ## Usage
