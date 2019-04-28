@@ -27,10 +27,13 @@ jobs:
   include:
     - stage: build
       name: "Build Docker image for amd64"
-      env: ARCH=amd64
+      env: ARCH=linux-amd64
 
-    - name: "Build Docker image for arm"
-      env: ARCH=arm
+    - name: "Build Docker image for arm32v6"
+      env: ARCH=linux-armv6
+
+    - name: "Build Docker image for arm32v7"
+      env: ARCH=linux-armv7
 
     - stage: deploy
       name: "Aggregate Docker images under one manifest"
