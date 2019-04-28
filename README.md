@@ -6,8 +6,8 @@ This Dockerfile is based on the [Dockerfile] officially provided within the `lnd
 
 The changes from upstream include:
 
-* exact versions of base images specified,
-* `make` replaced with _naked_ `go build`,
+* image versions correspond to lnd versions strictly,
+* Official `./release.sh` script used for maximum compatibility with provided binaries,
 * `apk add` removed from the `final` stage of the build to make cross-compilation possible,
 * maintainer label added.
 
@@ -16,13 +16,16 @@ The changes from upstream include:
 
 ## Tags
 
-* `latest`, `0.6`, `0.6.0` - currently _latest_ version of lnd for both `arm` and `amd64` ([log][log-agg])
-* `0.6.0-linux-arm` - LND version 0.6.0 for `arm` architecture, built on Travis ([log][log-arm])
-* `0.6.0-linux-amd64` - LND version 0.6.0 for `amd64` architecture, built on Travis ([log][log-amd64])
+* `latest`, `0.6`, `0.6.0` - currently _latest_ version of lnd for `arm32v6`, `arm32v7` and `amd64` ([log][log-agg]);
+* `0.6.0-linux-armv6` - LND version 0.6.0 for `arm32v6` architecture, [built on Travis][log-arm6];
+* `0.6.0-linux-armv7` - LND version 0.6.0 for `arm32v7` architecture, [built on Travis][log-arm7];
+* `0.6.0-linux-amd64` - LND version 0.6.0 for `amd64` architecture, [built on Travis][log-amd64].
 
-[log-arm]: https://travis-ci.com/lncm/docker-lnd/jobs/194675662
-[log-amd64]: https://travis-ci.com/lncm/docker-lnd/jobs/194675661
-[log-agg]: https://travis-ci.com/lncm/docker-lnd/jobs/194675663
+[log-agg]: https://travis-ci.com/lncm/docker-lnd/builds/109879482
+[log-arm6]: https://travis-ci.com/lncm/docker-lnd/jobs/196147555
+[log-arm7]: https://travis-ci.com/lncm/docker-lnd/jobs/196147556
+[log-amd64]: https://travis-ci.com/lncm/docker-lnd/jobs/196147554
+
 
 
 ## Usage
