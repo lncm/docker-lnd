@@ -48,6 +48,6 @@ IMAGE_LATEST="${SLUG}:latest"
 
 echo     "Pushing manifest ${IMAGE_LATEST}"
 docker -D manifest create "${IMAGE_LATEST}"  "${IMAGE_AMD64}"  "${IMAGE_ARM6}"  "${IMAGE_ARM7}"
-docker manifest annotate  "${IMAGE_LATEST}"  "${IMAGE_ARM7}"  --os linux  --arch arm  --variant v6
+docker manifest annotate  "${IMAGE_LATEST}"  "${IMAGE_ARM6}"  --os linux  --arch arm  --variant v6
 docker manifest annotate  "${IMAGE_LATEST}"  "${IMAGE_ARM7}"  --os linux  --arch arm  --variant v7
 docker manifest push      "${IMAGE_LATEST}"
