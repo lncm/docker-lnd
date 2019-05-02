@@ -7,10 +7,10 @@ services:
 
 language: bash
 
-# Sets ${VER} to be git tag IF available,
-#   if NOT available (PR, or push to master), sets ${VER} to directory with the highest number
-#
-# ${SLUG} removes "docker-" prefix, which while useful on GH, is useless on Docker Hub
+# SLUG    - converts Gihub slug (`lncm/docker-lnd`) to Docker slug (`lncm/lnd`)
+# VER     - if TAG is being build, VER contains only MAJOR and MINOR parts of the version (ex. `0.6.0` -> `0.6`)
+# DIR     - if BRANCH is being built, use DIR with the highest version number
+# PREFIX  - sets Dockerfile prefix.  Be it based on `git tag`, or highest-version DIR name
 env:
   global:
     - SLUG="${TRAVIS_REPO_SLUG/docker-/}"
