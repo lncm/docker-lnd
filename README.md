@@ -1,6 +1,6 @@
 # docker-lnd
 
-[![Build Status](https://travis-ci.com/lncm/docker-lnd.svg)](https://travis-ci.com/lncm/docker-lnd) ![](https://img.shields.io/microbadger/image-size/lncm/lnd/0.6.0.svg?style=flat) ![](https://img.shields.io/docker/pulls/lncm/lnd.svg?style=flat)
+[![Build Status](https://travis-ci.com/lncm/docker-lnd.svg)](https://travis-ci.com/lncm/docker-lnd) ![](https://img.shields.io/microbadger/image-size/lncm/lnd/0.7.0.svg?style=flat) ![](https://img.shields.io/docker/pulls/lncm/lnd.svg?style=flat)
 
 This Dockerfile is based on the [Dockerfile] officially provided within the `lnd` repo. 
 
@@ -16,15 +16,15 @@ The changes from upstream include:
 
 ## Tags
 
-* `latest`, `0.6`, `0.6.0` - currently _latest_ version of lnd for `arm32v6`, `arm32v7` and `amd64` ([log][log-agg]);
-* `0.6.0-linux-armv6` - LND version 0.6.0 for `arm32v6` architecture, [built on Travis][log-arm6];
-* `0.6.0-linux-armv7` - LND version 0.6.0 for `arm32v7` architecture, [built on Travis][log-arm7];
-* `0.6.0-linux-amd64` - LND version 0.6.0 for `amd64` architecture, [built on Travis][log-amd64].
+* `latest`, `0.7`, `0.7.0` - currently _latest_ version of lnd for `arm32v6`, `arm32v7` and `amd64` ([log][log-agg]);
+* `0.7.0-linux-armv6` - LND version 0.7.0 for `arm32v6` architecture, [built on Travis][log-arm6];
+* `0.7.0-linux-armv7` - LND version 0.7.0 for `arm32v7` architecture, [built on Travis][log-arm7];
+* `0.7.0-linux-amd64` - LND version 0.7.0 for `amd64` architecture, [built on Travis][log-amd64].
 
-[log-agg]: https://travis-ci.com/lncm/docker-lnd/builds/109879482
-[log-arm6]: https://travis-ci.com/lncm/docker-lnd/jobs/196147555
-[log-arm7]: https://travis-ci.com/lncm/docker-lnd/jobs/196147556
-[log-amd64]: https://travis-ci.com/lncm/docker-lnd/jobs/196147554
+[log-agg]: https://travis-ci.com/lncm/docker-lnd/builds/120439376
+[log-arm6]: https://travis-ci.com/lncm/docker-lnd/jobs/219086347
+[log-arm7]: https://travis-ci.com/lncm/docker-lnd/jobs/219086348
+[log-amd64]: https://travis-ci.com/lncm/docker-lnd/jobs/219086346
 
 
 
@@ -36,7 +36,7 @@ The changes from upstream include:
 First pull the image from [Docker Hub]:
 
 ```bash
-docker pull lncm/lnd:0.6
+docker pull lncm/lnd:0.7
 ```
 
 > **NOTE:** Running above will automatically choose native architecture of your CPU.
@@ -55,7 +55,7 @@ docker run -it --rm \
     -p 10009:10009 \
     --name lnd \
     --detach \
-    lncm/lnd:0.6
+    lncm/lnd:0.7
 ```
 
 That will run lnd such that:
@@ -88,3 +88,24 @@ docker exec -it lnd lncli --help
 docker exec -it lnd lncli getinfo
 docker exec -it lnd lncli getnetworkinfo
 ```
+
+
+## New Release
+
+Release process is fully automated.  That being said there are a few things that need to be done to prepare for the release.
+
+### Patch Release 
+
+In case of a patch release (v0.0.X), it's enough to edit `TAG` variable in appropriate `Dockerfile`, and push the changes.
+
+Ex. If `lnd` gets updated from `v0.6.0-beta` to `v0.6.1-beta`, it's enough to open `0.6/Dockerfile`, update [this line] with the new tag, commit, and push.
+
+[this line]: https://github.com/lncm/docker-lnd/blob/master/0.6/Dockerfile#L17
+
+### Major/Minor release
+
+Since this releases might bring changes that are not backwards compatible, A new root directory needs to be created with `MAJOR.MINOR` version in its name.  Once that done, a copy of a Docker file from previous release should be copied there, and `TAG` variable within should be updated.  If necessary, other changes can be made to that file as well.
+
+### Trigger
+
+To trigger build of new-multi arch release.  Create a git tag, and push it to Github.  After a few minutes the new version should show up on Docker Hub. 
