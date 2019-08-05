@@ -14,7 +14,7 @@ RUN apk add --no-cache --update alpine-sdk \
     ca-certificates \
     upx
 
-ENV TAG v0.7.0-beta
+ENV TAG v0.7.1-beta
 ENV FINGERPRINT F8037E70C12C7A263C032508CE58F7F8E20FD9A2
 
 ARG arch
