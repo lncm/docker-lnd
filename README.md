@@ -1,6 +1,6 @@
 # docker-lnd
 
-[![Build Status](https://travis-ci.com/lncm/docker-lnd.svg)](https://travis-ci.com/lncm/docker-lnd) ![](https://img.shields.io/microbadger/image-size/lncm/lnd/0.7.0.svg?style=flat) ![](https://img.shields.io/docker/pulls/lncm/lnd.svg?style=flat)
+[![Build Status](https://travis-ci.com/lncm/docker-lnd.svg)](https://travis-ci.com/lncm/docker-lnd) ![](https://img.shields.io/microbadger/image-size/lncm/lnd/0.7.1.svg?style=flat) ![](https://img.shields.io/docker/pulls/lncm/lnd.svg?style=flat)
 
 This Dockerfile is based on the [Dockerfile] officially provided within the `lnd` repo. 
 
@@ -16,15 +16,15 @@ The changes from upstream include:
 
 ## Tags
 
-* `latest`, `0.7`, `0.7.0` - currently _latest_ version of lnd for `arm32v6`, `arm32v7` and `amd64` ([log][log-agg]);
-* `0.7.0-linux-armv6` - LND version 0.7.0 for `arm32v6` architecture, [built on Travis][log-arm6];
-* `0.7.0-linux-armv7` - LND version 0.7.0 for `arm32v7` architecture, [built on Travis][log-arm7];
-* `0.7.0-linux-amd64` - LND version 0.7.0 for `amd64` architecture, [built on Travis][log-amd64].
+* `latest`, `0.7`, `0.7.1` - currently _latest_ version of lnd for `arm32v6`, `arm32v7` and `amd64` ([log][log-agg]);
+* `0.7.1-linux-armv6` - LND version 0.7.1 for `arm32v6` architecture, [built on Travis][log-arm6];
+* `0.7.1-linux-armv7` - LND version 0.7.1 for `arm32v7` architecture, [built on Travis][log-arm7];
+* `0.7.1-linux-amd64` - LND version 0.7.1 for `amd64` architecture, [built on Travis][log-amd64].
 
-[log-agg]: https://travis-ci.com/lncm/docker-lnd/builds/120439376
-[log-arm6]: https://travis-ci.com/lncm/docker-lnd/jobs/219086347
-[log-arm7]: https://travis-ci.com/lncm/docker-lnd/jobs/219086348
-[log-amd64]: https://travis-ci.com/lncm/docker-lnd/jobs/219086346
+[log-agg]: https://travis-ci.com/lncm/docker-lnd/builds/121961116
+[log-arm6]: https://travis-ci.com/lncm/docker-lnd/jobs/222464498
+[log-arm7]: https://travis-ci.com/lncm/docker-lnd/jobs/222464499
+[log-amd64]: https://travis-ci.com/lncm/docker-lnd/jobs/222464497
 
 
 
