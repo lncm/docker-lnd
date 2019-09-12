@@ -36,7 +36,7 @@ jobs:
       env: ARCH=linux-armv7
     
     - name: "Build docker image for arm64v8"
-      env: ARCH=arm64
+      env: ARCH=linux-armv8
 
     - stage: deploy
       name: "Aggregate Docker images under one manifest"
