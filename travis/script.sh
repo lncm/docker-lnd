@@ -21,6 +21,7 @@ echo "Saving images"
 
 LATEST_ARM6="${SLUG}:${TRAVIS_TAG}-linux-armv6"
 LATEST_ARM7="${SLUG}:${TRAVIS_TAG}-linux-armv7"
+LATEST_ARM8="${SLUG}:${TRAVIS_TAG}-linux-armv8"
 LATEST_AMD64="${SLUG}:${TRAVIS_TAG}-linux-amd64"
 
 mkdir images
@@ -30,6 +31,9 @@ docker save ${LATEST_ARM6} | gzip > "images/${SLUG/\//-}-${TRAVIS_TAG}-linux-arm
 
 docker pull ${LATEST_ARM7}
 docker save ${LATEST_ARM7} | gzip > "images/${SLUG/\//-}-${TRAVIS_TAG}-linux-armv7.tgz"
+
+docker pull ${LATEST_ARM8}
+docker save ${LATEST_ARM8} | gzip > "images/${SLUG/\//-}-${TRAVIS_TAG}-linux-armv8.tgz"
 
 docker pull ${LATEST_AMD64}
 docker save ${LATEST_AMD64} | gzip > "images/${SLUG/\//-}-${TRAVIS_TAG}-linux-amd64.tgz"

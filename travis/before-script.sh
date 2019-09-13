@@ -7,4 +7,9 @@ if [[ "${ARCH}" = "linux-armv6" ]] || [[ "${ARCH}" = "linux-armv7" ]]; then
 
     sed -ie "s/FROM alpine/FROM ${BASE_ARCH}\/alpine/g" "${PREFIX}/Dockerfile"
     echo "${PREFIX}/Dockerfile modified: Final stage image, base CPU architecture changed to: ${BASE_ARCH}"
+
+elif [[ "${ARCH}" = "linux-arm64" ]]; then
+   BASE_ARCH="arm64v8"
+   sed -ie "s/FROM alpine/FROM ${BASE_ARCH}\/alpine/g" "${PREFIX}/Dockerfile"
+   echo "${PREFIX}/Dockerfile modified: Final stage image, base CPU architecture changed to: ${BASE_ARCH}"
 fi
