@@ -16,7 +16,11 @@ arm32v7) export GOARCH=arm GOARM=7 ;;
 *)       export GOARCH="${ARCH}"   ;;
 esac
 
-TAGS="autopilotrpc invoicesrpc walletrpc routerrpc watchtowerrpc neutrino"
+# original content
+TAGS="autopilotrpc invoicesrpc walletrpc routerrpc watchtowerrpc"
+
+# Added by yours truly
+TAGS="${TAGS} neutrino wtclientrpc"
 
 go build -v -trimpath -mod=readonly -o /go/bin/ -ldflags "${COMMITFLAGS}" -tags="${TAGS} signrpc chainrpc" "${PKG}/cmd/lnd"
 go build -v -trimpath -mod=readonly -o /go/bin/ -ldflags "${COMMITFLAGS}" -tags="${TAGS}"                  "${PKG}/cmd/lncli"
