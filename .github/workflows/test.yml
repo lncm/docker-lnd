@@ -40,7 +40,7 @@ jobs:
       - name: Save image to a .tgz file
         run: |
           mkdir -p image/
-          docker save "lnd:${{ matrix.arch }}" | gzip > "image/lnd-${{ matrix.ver }}-${{ matrix.arch }}.tgz"
+          docker save "lnd:${{ matrix.ver }}-${{ matrix.arch }}" | gzip > "image/lnd-${{ matrix.ver }}-${{ matrix.arch }}.tgz"
 
       - name: Print sha256sum of produced Docker image
         run: sha256sum "image/lnd-${{ matrix.ver }}-${{ matrix.arch }}.tgz"
@@ -53,22 +53,22 @@ jobs:
 
 
       # TODO: see where the built binaries end up in the image
-      - name: Extract binary from the built image
+      - name: Extract binaries from the built image
         run: |
-          mkdir -p binary/
-          ID=$(docker create "lnd:${{ matrix.arch }}")
-          docker cp  "${ID}:/bin/lnd"    binary/
-          docker cp  "${ID}:/bin/lncli"  binary/
+          mkdir -p binaries/
+          ID=$(docker create "lnd:${{ matrix.ver }}-${{ matrix.arch }}")
+          docker cp  "${ID}:/bin/lnd"    binaries/
+          docker cp  "${ID}:/bin/lncli"  binaries/
           docker rm  "${ID}"
 
-          # TODO: Two files so also tar is needed
-          gzip -S "-${{ matrix.arch }}.gz" binary/lnd
+          gzip -S "-${{ matrix.ver }}-${{ matrix.arch }}.gz" binaries/lnd
+          gzip -S "-${{ matrix.ver }}-${{ matrix.arch }}.gz" binaries/lncli
 
-      - name: Print sha256sum of extracted binary
-        run: sha256sum binary/*
+      - name: Print sha256sum of extracted binaries
+        run: sha256sum binaries/*
 
-      - name: Add raw binary as build artifact
+      - name: Add raw binaries as build artifacts
         uses: actions/upload-artifact@v1.0.0
         with:
           name: binaries
-          path: binary/
+          path: binaries/
