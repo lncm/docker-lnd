@@ -31,7 +31,7 @@ jobs:
         run: >
           DOCKER_BUILDKIT=1 docker build --no-cache "${{ matrix.ver }}"
           --build-arg "goarch=${{ matrix.arch }}"
-          --tag       "lnd:${{ matrix-ver }}-${{ matrix.arch }}"
+          --tag       "lnd:${{ matrix.ver }}-${{ matrix.arch }}"
           --file      "${{ matrix.ver }}/Dockerfile"
 
       - name: Show built image details
