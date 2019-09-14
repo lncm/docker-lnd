@@ -41,10 +41,6 @@ COPY ./build.sh .
 
 FROM golang:1.13-alpine3.10 AS alpine-builder
 
-# Force Go to use the cgo based DNS resolver. This is required to ensure DNS
-#   queries required to connect to linked containers succeed.
-ENV GODEBUG netdns=cgo
-
 # Install dependencies
 RUN apk add --no-cache \
     libc-dev \
@@ -57,6 +53,9 @@ COPY  --from=preparer  /go/src/lnd/  /go/src/lnd/
 
 WORKDIR /go/src/lnd/
 
+# Force Go to use the cgo based DNS resolver. This is required to ensure DNS
+#   queries required to connect to linked containers succeed.
+ENV GODEBUG netdns=cgo
 ARG goarch=amd64
 
 RUN ./build.sh "${goarch}"
@@ -79,6 +78,7 @@ COPY  --from=preparer  /go/src/lnd/  /go/src/lnd/
 
 WORKDIR /go/src/lnd/
 
+ENV GODEBUG netdns=cgo
 ARG goarch=amd64
 
 RUN ./build.sh "${goarch}"
