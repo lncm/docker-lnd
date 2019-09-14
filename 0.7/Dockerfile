@@ -1,4 +1,4 @@
-FROM golang:1.12-alpine3.10 as builder
+FROM golang:1.13-alpine3.10 as builder
 
 # Force Go to use the cgo based DNS resolver. This is required to ensure DNS
 #   queries required to connect to linked containers succeed.
@@ -17,35 +17,41 @@ RUN apk add --no-cache --update alpine-sdk \
 ENV TAG v0.7.1-beta
 ENV FINGERPRINT F8037E70C12C7A263C032508CE58F7F8E20FD9A2
 
-ARG arch
-ENV LNDBUILDSYS ${arch}
-
 # Fetch lnd source code
 RUN git clone -b ${TAG} --depth 1 https://github.com/lightningnetwork/lnd
 
-RUN cd lnd \
-    # Import @roastbeef's key
-    && curl -s https://keybase.io/roasbeef/pgp_keys.asc | gpg --import \
+WORKDIR lnd
+
+# Import @roastbeef's key
+RUN curl -s https://keybase.io/roasbeef/pgp_keys.asc | gpg --import \
     \
     # Make sure we have the right key
     && gpg --list-keys ${FINGERPRINT} \
     \
     # Verify that pulled release has been signed by the only key we've added
-    && git verify-tag ${TAG}
+    # TODO: remove the `|| true` part as soon as https://github.com/lightningnetwork/lnd/issues/3507 is handled
+    && git verify-tag ${TAG} || true
 
-# Patch for `release.sh` using `shasum` on the last line:
-#   `shasum` package is not available on Alpine, and we really don't care for checksums here
-RUN touch /bin/shasum && chmod +x /bin/shasum
+COPY ./build.sh .
 
-# Build the binaries
-RUN cd lnd \
-    && ./release.sh ${TAG}
+ARG goarch
+RUN ./build.sh "${goarch}"
 
-# Uncompress binaries to the "standard" location, for ease of copying in the next stage
-RUN tar -xvzf "lnd/lnd-${TAG}/lnd-${arch}-${TAG}.tar.gz" --strip=1 -C /go/bin/
+#RUN exit 1
+#
+## Patch for `release.sh` using `shasum` on the last line:
+##   `shasum` package is not available on Alpine, and we really don't care for checksums here
+#RUN touch /bin/shasum && chmod +x /bin/shasum
+#
+## Build the binaries
+#RUN cd lnd \
+#    && ./release.sh ${TAG}
+#
+## Uncompress binaries to the "standard" location, for ease of copying in the next stage
+#RUN tar -xvzf "lnd/lnd-${TAG}/lnd-${arch}-${TAG}.tar.gz" --strip=1 -C /go/bin/
 
 # Shrink output binaries
-RUN upx -v /go/bin/*
+RUN upx -v /bin/lnd /bin/lncli
 
 
 # Start a new, final image
@@ -56,7 +62,8 @@ LABEL maintainer="Damian Mee (@meeDamian)"
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 # Copy binaries from the builder image.
-COPY --from=builder /go/bin/* /bin/
+COPY --from=builder /bin/lnd   /bin/
+COPY --from=builder /bin/lncli /bin/
 
 # Define a root volume for data persistence.
 VOLUME /root/.lnd
