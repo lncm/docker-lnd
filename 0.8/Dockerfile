@@ -4,12 +4,13 @@ RUN apk add --no-cache \
     gnupg \
     git
 
-ENV KEY F8037E70C12C7A263C032508CE58F7F8E20FD9A2
+ENV KEYS F8037E70C12C7A263C032508CE58F7F8E20FD9A2 \
+         2C95FE66287126FB866FBC8D6DF57B9F9514972F
 
-# Try to fetch key from keyservers listed below.  On first success terminate with `exit 0`.  If loop is not interrupted,
+# Try to fetch keys from keyservers listed below.  On first success terminate with `exit 0`.  If loop is not interrupted,
 #   it means all attempts failed, and `exit 1` is called.
 RUN for SRV in hkp://p80.pool.sks-keyservers.net:80  ha.pool.sks-keyservers.net  keyserver.pgp.com  pgp.mit.edu; do \
-        timeout 9s  gpg  --keyserver "${SRV}"  --recv-keys "${KEY}"  >/dev/null 2<&1 && \
+        timeout 9s  gpg  --keyserver "${SRV}"  --recv-keys ${KEYS}  >/dev/null 2<&1 && \
             { echo "OK:  ${SRV}" && exit 0; } || \
             { echo "ERR: ${SRV} fail=$?"; } ; \
     done && exit 1
@@ -18,12 +19,12 @@ RUN gpg --list-keys
 
 RUN mkdir -p /go/src/
 
-ENV TAG v0.7.1-beta
+ENV TAG v0.8.0-beta-rc1
 ENV DIR /go/src/lnd/
 
 # Fetch lnd source code
 RUN cd /go/src/ && \
-    git clone  -b ${TAG}  --depth=1  https://github.com/lightningnetwork/lnd
+    git clone  -b "${TAG}"  --depth=1  https://github.com/lightningnetwork/lnd
 
 WORKDIR /go/src/lnd/
 
@@ -33,15 +34,15 @@ WORKDIR /go/src/lnd/
 RUN git verify-tag "${TAG}" || \
     { git verify-tag --raw "${TAG}" 2>&1 | grep EXPKEYSIG && echo "Accepting expired key!"; }
 
-# TODO: nuke after https://github.com/lightningnetwork/lnd/issues/3506 is resolved
-RUN go mod edit -replace="github.com/btcsuite/btcwallet=github.com/btcsuite/btcwallet@v0.0.0-20190814023431-505acf51507f"
+## TODO: nuke after https://github.com/lightningnetwork/lnd/issues/3506 is resolved
+#RUN go mod edit -replace="github.com/btcsuite/btcwallet=github.com/btcsuite/btcwallet@v0.0.0-20190814023431-505acf51507f"
 
 # NOTE: needed to have deterministic builds
 RUN go mod edit -go=1.13
 
-RUN go mod tidy
+#RUN go mod tidy
 
-RUN git diff go.mod go.sum
+#RUN git diff go.mod go.sum
 
 COPY ./build.sh .
 
@@ -133,8 +134,8 @@ RUN file        /debian/* /alpine/*
 RUN du          /debian/* /alpine/*
 
 # Compare both built binaries
-#RUN diff -q  /alpine/lnd   /debian/lnd \
-# && diff -q  /{alpine,debian}/lncli
+RUN diff -q  /alpine/lnd   /debian/lnd \
+ && diff -q  /{alpine,debian}/lncli
 
 # Print binary info PRIOR compression
 RUN sha256sum   /alpine/*

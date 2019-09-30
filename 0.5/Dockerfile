@@ -1,4 +1,4 @@
-FROM golang:1.11-alpine3.9 as builder
+FROM golang:1.13-alpine3.10 AS builder
 
 # Force Go to use the cgo based DNS resolver. This is required to ensure DNS
 # queries required to connect to linked containers succeed.
@@ -15,7 +15,7 @@ RUN apk add --no-cache --update alpine-sdk \
 # TODO: Add content hash validation upon source download; see lncm/docker-lnd#5
 RUN git clone -b v0.5.2-beta --depth 1 https://github.com/lightningnetwork/lnd
 
-ARG goos
+ARG goos=linux
 ENV GOOS ${goos}
 
 ARG goarch
@@ -38,7 +38,7 @@ RUN upx -v /go/bin/*
 
 
 # Start a new, final image
-FROM alpine:3.9 as final
+FROM alpine:3.10 as final
 
 LABEL maintainer="Damian Mee (@meeDamian)"
 

@@ -17,6 +17,7 @@ arm32v7) export GOARCH=arm GOARM=7 ;;
 esac
 
 # original content
+#   src: https://github.com/lightningnetwork/lnd/blob/v0.8.0-beta-rc1/release.sh#L63-L64
 TAGS="autopilotrpc invoicesrpc walletrpc routerrpc watchtowerrpc"
 
 # Added by yours truly (@lncm)
