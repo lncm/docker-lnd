@@ -56,10 +56,10 @@ RUN echo "GOOS:${GOOS} GOARCH:${GOARCH} GOARM:${GOARM}"
 # Build the binaries
 RUN make install
 
-# move arm binaries to the "standard" location, for ease of copying in the next stage
-RUN if [[ -d /go/bin/linux_arm/ ]]; then mv /go/bin/linux_arm/* /go/bin/; rmdir /go/bin/linux_arm/; fi
+# Move arm[64] binaries to the "standard" location, for ease of copying in the next stage
+RUN if [ -d /go/bin/linux_* ]; then mv /go/bin/linux_*/* /go/bin/  &&  rmdir /go/bin/linux_* ; fi
 
-# shrink output binaries
+# Shrink output binaries
 RUN upx -v /go/bin/*
 
 
