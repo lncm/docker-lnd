@@ -117,7 +117,7 @@ jobs:
         run: docker run --rm --privileged "meedamian/simple-qemu:v4.1.0" -p yes
 
       - name: Load all images locally
-        run: ls -d docker-images/ | xargs -I %  docker load -i "%"
+        run: ls -d docker-images/* | xargs -I %  docker load -i "%"
 
       - name: List all tagged images
         run: docker images lnd
