@@ -121,3 +121,18 @@ jobs:
 
       - name: List all tagged images
         run: docker images lnd
+
+      - name: Run sanity checks
+        run: |
+          for tag in $(docker images lnd --format "{{.Tag}}"); do
+            echo
+            echo "~~~~~ lnd:${tag} ~~~~~"
+            docker run --rm -it                         "lnd:${tag}" --version
+            docker run --rm -it --entrypoint=lncli      "lnd:${tag}" --version
+
+            docker run --rm -it --entrypoint=uname      "lnd:${tag}" -a
+            docker run --rm -it --entrypoint=cat        "lnd:${tag}" /etc/os-release
+            docker run --rm -it --entrypoint=sha256sum  "lnd:${tag}" /bin/lnd /bin/lncli
+
+            docker run --rm -it --entrypoint=sh    "lnd:${tag}" -c 'apk add --no-cache file && file /bin/lnd /bin/lncli'
+          done
