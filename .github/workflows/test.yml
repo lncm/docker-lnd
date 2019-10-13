@@ -13,6 +13,7 @@ jobs:
           - 0.5
           - 0.6
           - 0.7
+          - 0.8
 
         arch:
           - amd64
@@ -25,11 +26,11 @@ jobs:
 
       - name: Set target platform
         if: matrix.arch != 'amd64'
-        run: ./scripts/ci-set-target-image-architecture.sh "${{ matrix.arch }}" "${{ matrix.ver }}/Dockerfile"
+        run: ./scripts/ci-set-target-image-architecture.sh  "${{ matrix.arch }}"  "${{ matrix.ver }}/Dockerfile"
 
-      - name: Build invoicer in Docker
+      - name: Build lnd in Docker
         run: >
-          DOCKER_BUILDKIT=1 docker build --no-cache "${{ matrix.ver }}"
+          DOCKER_BUILDKIT=1 docker build --no-cache "${{ matrix.ver }}/"
           --build-arg "goarch=${{ matrix.arch }}"
           --tag       "lnd:${{ matrix.ver }}-${{ matrix.arch }}"
           --file      "${{ matrix.ver }}/Dockerfile"
@@ -51,8 +52,6 @@ jobs:
           name: docker-images
           path: image/
 
-
-      # TODO: see where the built binaries end up in the image
       - name: Extract binaries from the built image
         run: |
           mkdir -p binaries/

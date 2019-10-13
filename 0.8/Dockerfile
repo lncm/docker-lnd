@@ -1,8 +1,6 @@
 FROM golang:1.13-alpine3.10 AS preparer
 
-RUN apk add --no-cache \
-    gnupg \
-    git
+RUN apk add --no-cache  gnupg  git
 
 ENV KEYS F8037E70C12C7A263C032508CE58F7F8E20FD9A2 \
          2C95FE66287126FB866FBC8D6DF57B9F9514972F
@@ -19,7 +17,12 @@ RUN gpg --list-keys
 
 RUN mkdir -p /go/src/
 
-ENV TAG v0.8.0-beta-rc1
+## # # # # # # # # # # # # # # # # # #
+# THIS IS THE TAG BEING BUILT HERE:
+#   TODO: change to a more final version,
+#         once released
+ENV TAG v0.8.0-beta-rc2
+
 ENV DIR /go/src/lnd/
 
 # Fetch lnd source code
@@ -28,26 +31,21 @@ RUN cd /go/src/ && \
 
 WORKDIR /go/src/lnd/
 
-# NOTE: The second part is a hack around @Roasbeef's "key hygiene".  A manual attempt at accepting expired keys through
-#       git verify-tag; What can possibly go wrong? 😅
+# NOTE: The fallback condition is a hack around @Roasbeef's "key hygiene".  A manual attempt at accepting expired keys
+#       through git verify-tag; What can possibly go wrong? 😅
 #       More: https://github.com/lightningnetwork/lnd/issues/3507#issuecomment-532414524
 RUN git verify-tag "${TAG}" || \
     { git verify-tag --raw "${TAG}" 2>&1 | grep EXPKEYSIG && echo "Accepting expired key!"; }
 
-## TODO: nuke after https://github.com/lightningnetwork/lnd/issues/3506 is resolved
-#RUN go mod edit -replace="github.com/btcsuite/btcwallet=github.com/btcsuite/btcwallet@v0.0.0-20190814023431-505acf51507f"
-
 # NOTE: needed to have deterministic builds
 RUN go mod edit -go=1.13
 
-#RUN go mod tidy
+RUN go mod tidy
 
-#RUN git diff go.mod go.sum
+RUN git diff go.mod go.sum
 
 COPY ./build.sh .
-
 # TODO:  verify hash of ./build.sh file
-
 
 
 FROM golang:1.13-alpine3.10 AS alpine-builder
@@ -104,10 +102,7 @@ FROM alpine:3.10 AS cross-check
 RUN apk add --no-cache \
     ca-certificates \
     file \
-    upx \
-    colordiff \
-    bash
-
+    upx
 
 RUN mkdir -p  /bin  /alpine  /debian
 
@@ -115,46 +110,30 @@ RUN mkdir -p  /bin  /alpine  /debian
 COPY  --from=alpine-builder  /go/bin/*  /alpine/
 COPY  --from=debian-builder  /go/bin/*  /debian/
 
-#SHELL ["/bin/bash", "-c"]
-#
-#RUN xxd /debian/lncli > aaa
-#RUN wc -l ./aaa
-#
-#RUN xxd /alpine/lncli > bbb
-#RUN wc -l ./bbb
-#
-#RUN diff -y --suppress-common-lines --speed-large-files  ./aaa  ./bbb
-#
-#RUN diff <(od -An -tx1 -w1 -v /debian/lncli) \
-#         <(od -An -tx1 -w1 -v /alpine/lncli)
-
 # Print binary info PRIOR comparison
-RUN sha256sum   /debian/* /alpine/*
-RUN file        /debian/* /alpine/*
-RUN du          /debian/* /alpine/*
+RUN sha256sum   /debian/*  /alpine/*
+RUN file        /debian/*  /alpine/*
+RUN du          /debian/*  /alpine/*
 
 # Compare both built binaries
 RUN diff -q  /alpine/lnd   /debian/lnd \
- && diff -q  /{alpine,debian}/lncli
+ && diff -q  /alpine/lncli /debian/lncli
 
 # Print binary info PRIOR compression
 RUN sha256sum   /alpine/*
 RUN file        /alpine/*
 RUN du          /alpine/*
 
-# Compress binary, and be verbose about it
-RUN upx -v  /alpine/lnd  /alpine/lncli  /debian/lnd  /debian/lncli
+# Compress binaries, and be verbose about it
+RUN upx -v  /alpine/lnd  /alpine/lncli
 
 # Print binary info PAST compression
-#RUN sha256sum   /alpine/*
-#RUN file        /alpine/*
-#RUN du          /alpine/*
-RUN sha256sum   /debian/* /alpine/*
-RUN file        /debian/* /alpine/*
-RUN du          /debian/* /alpine/*
+RUN sha256sum   /alpine/*
+RUN file        /alpine/*
+RUN du          /alpine/*
 
 # If all are identical, proceed to move the binary into
-RUN mv /alpine/* /bin/
+RUN mv  /alpine/*  /bin/
 
 
 # Start a new, final image
