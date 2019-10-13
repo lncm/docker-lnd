@@ -81,4 +81,3 @@ EXPOSE 8080 9735 10009
 
 # Specify the start command and entrypoint as the lnd daemon.
 ENTRYPOINT ["lnd"]
-CMD ["lnd"]
