@@ -6,7 +6,6 @@ ARCH=$1
 
 PKG="github.com/lightningnetwork/lnd"
 
-
 # All our images are built for Linux
 export GOOS=linux
 

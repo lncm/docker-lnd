@@ -2,6 +2,11 @@ FROM golang:1.13-alpine3.10 AS preparer
 
 RUN apk add --no-cache  gnupg  git
 
+## # # # # # # # # # # # # # # # # # #
+# THIS IS THE TAG BEING BUILT HERE:
+#   TODO: change to a more final version,
+#         once released
+ENV TAG v0.8.0-beta-rc2
 ENV KEYS F8037E70C12C7A263C032508CE58F7F8E20FD9A2 \
          2C95FE66287126FB866FBC8D6DF57B9F9514972F
 
@@ -16,12 +21,6 @@ RUN for SRV in hkp://p80.pool.sks-keyservers.net:80  ha.pool.sks-keyservers.net 
 RUN gpg --list-keys
 
 RUN mkdir -p /go/src/
-
-## # # # # # # # # # # # # # # # # # #
-# THIS IS THE TAG BEING BUILT HERE:
-#   TODO: change to a more final version,
-#         once released
-ENV TAG v0.8.0-beta-rc2
 
 ENV DIR /go/src/lnd/
 

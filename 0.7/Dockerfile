@@ -4,7 +4,10 @@ RUN apk add --no-cache \
     gnupg \
     git
 
+
+ENV TAG v0.7.1-beta
 ENV KEY F8037E70C12C7A263C032508CE58F7F8E20FD9A2
+
 
 # Try to fetch key from keyservers listed below.  On first success terminate with `exit 0`.  If loop is not interrupted,
 #   it means all attempts failed, and `exit 1` is called.
@@ -18,7 +21,6 @@ RUN gpg --list-keys
 
 RUN mkdir -p /go/src/
 
-ENV TAG v0.7.1-beta
 ENV DIR /go/src/lnd/
 
 # Fetch lnd source code
@@ -33,7 +35,7 @@ WORKDIR /go/src/lnd/
 RUN git verify-tag "${TAG}" || \
     { git verify-tag --raw "${TAG}" 2>&1 | grep EXPKEYSIG && echo "Accepting expired key!"; }
 
-# TODO: nuke after https://github.com/lightningnetwork/lnd/issues/3506 is resolved
+# NOTE: context: https://github.com/lightningnetwork/lnd/issues/3506
 RUN go mod edit -replace="github.com/btcsuite/btcwallet=github.com/btcsuite/btcwallet@v0.0.0-20190814023431-505acf51507f"
 
 # NOTE: needed to have deterministic builds
