@@ -82,20 +82,42 @@ jobs:
 
       - name: Extract binaries from the built image
         run: |
-          mkdir -p binaries/
+          mkdir -p bins/ binaries/
           ID=$(docker create "lnd:${{matrix.ver}}-${{matrix.arch}}")
-          docker cp  "${ID}:/bin/lnd"    binaries/
-          docker cp  "${ID}:/bin/lncli"  binaries/
+          docker cp  "${ID}:/bin/lnd"    bins/
+          docker cp  "${ID}:/bin/lncli"  bins/
           docker rm  "${ID}"
 
-          gzip -S "-${{matrix.ver}}-${{matrix.arch}}.gz" binaries/lnd
-          gzip -S "-${{matrix.ver}}-${{matrix.arch}}.gz" binaries/lncli
+          tar  -C bins/  -cvaf "binaries/lnd-${{matrix.ver}}-${{matrix.arch}}.tgz"  .
 
       - name: Print sha256sum of extracted binaries
-        run: sha256sum binaries/*
+        run: sha256sum bins/*
 
       - name: Add raw binaries as build artifacts
         uses: actions/upload-artifact@v1.0.0
         with:
           name: binaries
           path: binaries/
+
+  test:
+    name: Check sanity of images
+    runs-on: ubuntu-18.04
+    needs: build
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v1.0.0
+        with:
+          name: docker-images
+
+      - name: Print sha256sum of all Docker images
+        run: sha256sum docker-images/*
+
+      - name: Register self-compiled qemu
+        run: docker run --rm --privileged "meedamian/simple-qemu:v4.1.0" -p yes
+
+      - name: Load all images locally
+        run: ls docker-images/ | xargs -I %  docker load -i "images/%"
+
+      - name: List all tagged images
+        run: docker images lnd
