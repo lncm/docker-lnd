@@ -17,16 +17,16 @@ index 88899c3..14088e7 100644
 +# Okay to hardcode them here, as it's in a variant that specifically wants Prometheus
 +CMD ["--prometheus.enable", "--prometheus.listen=0.0.0.0:8989"]
 diff --git build.sh build.sh
-index 784b0a0..346862c 100755
+index eceaf46..ea122e5 100755
 --- build.sh
 +++ build.sh
-@@ -34,6 +34,9 @@ TAGS="autopilotrpc invoicesrpc walletrpc routerrpc watchtowerrpc"
+@@ -33,6 +33,9 @@ TAGS="autopilotrpc invoicesrpc walletrpc routerrpc watchtowerrpc"
  # TODO: Check if still needed after Go v1.14 release
  TAGS="${TAGS} osusergo netgo static_build"
  
 +# Added by yours truly (@lncm) to enable monitoring
 +TAGS="${TAGS} monitoring"
 +
+ 
  build() {
    binary_name=$1
-   extra_tags=$2
