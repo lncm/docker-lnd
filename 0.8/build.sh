@@ -35,16 +35,12 @@ LDFLAGS="${LDFLAGS} -extldflags \"-fno-PIC -static\""
 
 # original content
 #   src: https://github.com/lightningnetwork/lnd/blob/v0.8.0-beta-rc2/build/release/release.sh#L97-L98
-# TODO: Check these didn't change in v0.8.0-beta
 TAGS="autopilotrpc invoicesrpc walletrpc routerrpc watchtowerrpc"
 
-# Added by yours truly (@lncm)
-# TODO: Check what's their default state on v0.8.0-beta
-TAGS="${TAGS} neutrino wtclientrpc"
 
 # Added to make output binary static
 #   ctx: https://github.com/golang/go/issues/26492
-# TODO: Check if still needed after Go v1.14 released
+# TODO: Check if still needed after Go v1.14 release
 TAGS="${TAGS} osusergo netgo static_build"
 
 build() {

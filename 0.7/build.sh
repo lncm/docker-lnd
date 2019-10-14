@@ -29,7 +29,7 @@ LDFLAGS="${LDFLAGS} -X ${PKG}/build.Commit=$(git describe --abbrev=40)"
 TAGS="autopilotrpc invoicesrpc walletrpc routerrpc watchtowerrpc"
 
 # Added by yours truly (@lncm)
-TAGS="${TAGS} neutrino wtclientrpc"
+TAGS="${TAGS} wtclientrpc"
 
 build() {
   binary_name=$1
