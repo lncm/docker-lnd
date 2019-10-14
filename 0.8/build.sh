@@ -23,15 +23,6 @@ LDFLAGS="-w -s"
 # [binary version] Inject --version into the final binary
 LDFLAGS="${LDFLAGS} -X ${PKG}/build.Commit=$(git describe --abbrev=40)"
 
-# [deterministic binaries] Fix reproducability for some cases
-#   ctx: https://github.com/golang/go/issues/33772#issuecomment-528176001
-LDFLAGS="${LDFLAGS} -buildid="
-
-# [deterministic binaries] Fix reproducability when C-stuff is used
-#   ctx: https://github.com/golang/go/issues/26492
-# TODO: Check if still needed after Go v1.14 released
-LDFLAGS="${LDFLAGS} -extldflags \"-fno-PIC -static\""
-
 
 # original content
 #   src: https://github.com/lightningnetwork/lnd/blob/v0.8.0-beta-rc2/build/release/release.sh#L97-L98
