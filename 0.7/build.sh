@@ -31,6 +31,11 @@ TAGS="autopilotrpc invoicesrpc walletrpc routerrpc watchtowerrpc"
 # Added by yours truly (@lncm)
 TAGS="${TAGS} wtclientrpc"
 
+# Added to make output binary static
+#   ctx: https://github.com/golang/go/issues/26492
+# TODO: Check if still needed after Go v1.14 release
+TAGS="${TAGS} osusergo netgo static_build"
+
 build() {
   binary_name=$1
   extra_tags=$2
