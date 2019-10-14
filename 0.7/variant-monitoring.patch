@@ -1,0 +1,31 @@
+diff --git Dockerfile Dockerfile
+index 179f20d..7f9e922 100644
+--- Dockerfile
++++ Dockerfile
+@@ -149,8 +149,11 @@ COPY  --from=cross-check  /bin/lncli  /bin/
+ # Define a root volume for data persistence.
+ VOLUME /root/.lnd
+ 
+-# Expose lnd ports (rest, p2p, rpc respectively).
+-EXPOSE 8080 9735 10009
++# Expose lnd ports (rest, monitoring, p2p, rpc respectively).
++EXPOSE 8080 8989 9735 10009
+ 
+ # Specify the start command and entrypoint as the lnd daemon.
+ ENTRYPOINT ["lnd"]
++
++# Okay to hardcode them here, as it's in a variant that specifically wants Prometheus
++CMD ["--prometheus.enable", "--prometheus.listen=0.0.0.0:8989"]
+diff --git build.sh build.sh
+index 1865123..7e25396 100755
+--- build.sh
++++ build.sh
+@@ -29,7 +29,7 @@ LDFLAGS="${LDFLAGS} -X ${PKG}/build.Commit=$(git describe --abbrev=40)"
+ TAGS="autopilotrpc invoicesrpc walletrpc routerrpc watchtowerrpc"
+ 
+ # Added by yours truly (@lncm)
+-TAGS="${TAGS} wtclientrpc"
++TAGS="${TAGS} wtclientrpc monitoring"
+ 
+ # Added to make output binary static
+ #   ctx: https://github.com/golang/go/issues/26492
