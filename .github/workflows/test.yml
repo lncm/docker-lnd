@@ -59,6 +59,9 @@ jobs:
       - name: Build lnd (v0.7++)
         if: matrix.ver != 0.5 && matrix.ver != 0.6
         run: >
+          # TODO: Test variant build
+          (cd "${{matrix.ver}}/"  &&  patch < variant-monitoring.patch)
+
           DOCKER_BUILDKIT=1 docker build --no-cache "${{matrix.ver}}/"
           --build-arg "goarch=${{matrix.arch}}"
           --tag       "lnd:${{matrix.ver}}-${{matrix.arch}}"
