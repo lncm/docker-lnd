@@ -1,8 +1,8 @@
 diff --git Dockerfile Dockerfile
-index c3f2274..91b48fa 100644
+index 88899c3..14088e7 100644
 --- Dockerfile
 +++ Dockerfile
-@@ -147,8 +147,11 @@ COPY  --from=cross-check  /bin/lncli  /bin/
+@@ -146,8 +146,11 @@ COPY  --from=cross-check  /bin/lncli  /bin/
  # Define a root volume for data persistence.
  VOLUME /root/.lnd
  
@@ -17,10 +17,10 @@ index c3f2274..91b48fa 100644
 +# Okay to hardcode them here, as it's in a variant that specifically wants Prometheus
 +CMD ["--prometheus.enable", "--prometheus.listen=0.0.0.0:8989"]
 diff --git build.sh build.sh
-index 3da6714..0f73bc8 100755
+index 784b0a0..346862c 100755
 --- build.sh
 +++ build.sh
-@@ -43,6 +43,9 @@ TAGS="autopilotrpc invoicesrpc walletrpc routerrpc watchtowerrpc"
+@@ -34,6 +34,9 @@ TAGS="autopilotrpc invoicesrpc walletrpc routerrpc watchtowerrpc"
  # TODO: Check if still needed after Go v1.14 release
  TAGS="${TAGS} osusergo netgo static_build"
  
