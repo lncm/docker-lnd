@@ -193,13 +193,13 @@ jobs:
     steps:
       - name: Setup environment
         run: |
-          echo "${GITHUB_REF}"
-
-          TAG="$(echo "${GITHUB_REF}" | grep 'refs/tags/' | awk -F/ '{print $NF}')"
-          VERSION="$(echo "${TAG}" | cut -d+ -f1)"
-
           echo ::set-env name=DOCKER_USER::"${GITHUB_ACTOR,,}"
           echo ::set-env name=SLUG::"$(echo ${GITHUB_REPOSITORY,,} | sed 's/docker-//')"
+
+          TAG="$(echo "${GITHUB_REF}" | grep 'refs/tags/' | awk -F/ '{print $NF}')"
+          echo ::set-env name=TAG::"${TAG}"
+
+          VERSION="$(echo "${TAG}" | cut -d+ -f1)"
           echo ::set-env name=VERSION::"${VERSION}"
 
       - name: Enable manifests
