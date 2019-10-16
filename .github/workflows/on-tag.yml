@@ -227,7 +227,7 @@ jobs:
       # No short tags.  lnd releases are quite chaotic, it's better to no provide convenience that can easily backfire.
       - name: Version-tag all images
         run: |
-          for arch in $(docker images bitcoind --format "{{.Tag}}"); do
+          for arch in $(docker images lnd --format "{{.Tag}}"); do
             docker tag  "lnd:${arch}"  "${SLUG}:${VERSION}-${arch}"
             docker tag  "lnd:${arch}"  "${SLUG}:${TAG}-${arch}"
           done
