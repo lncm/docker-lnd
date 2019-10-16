@@ -101,7 +101,6 @@ jobs:
           --tag       "lnd:${{matrix.arch}}"
 
       - name: Build lnd (v0.7++)
-        if: matrix.ver != 0.5 && matrix.ver != 0.6
         run: >
           if [[ "${DIR}" = "0.5" ]] || [[ "${DIR}" = "0.6" ]]; then
             echo "Older release detected.  Skipping."
@@ -132,7 +131,7 @@ jobs:
       - name: Extract binaries from the built image
         run: |
           mkdir -p bins/ binaries/
-          ID=$(docker create "lnd:${{matrix.ver}}-${{matrix.arch}}")
+          ID=$(docker create "lnd:${{matrix.arch}}")
           docker cp  "${ID}:/bin/lnd"    bins/
           docker cp  "${ID}:/bin/lncli"  bins/
           docker rm  "${ID}"
