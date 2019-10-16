@@ -120,7 +120,7 @@ jobs:
           docker save "lnd:${{matrix.arch}}" | gzip > "image/docker-lnd-${TAG}-${{matrix.arch}}.tgz"
 
       - name: Print sha256sum of produced Docker image
-        run: sha256sum "image/*"
+        run: sha256sum image/*
 
       - name: Add Docker image as build artifact
         uses: actions/upload-artifact@v1.0.0
