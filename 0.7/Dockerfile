@@ -2,20 +2,26 @@ FROM golang:1.13-alpine3.10 AS preparer
 
 RUN apk add --no-cache  gnupg  git
 
-
 ENV TAG v0.7.1-beta
+
+
+ENV KEYBASE_USER=roasbeef
 ENV KEY F8037E70C12C7A263C032508CE58F7F8E20FD9A2
 
-
-# Try to fetch key from keyservers listed below.  On first success terminate with `exit 0`.  If loop is not interrupted,
-#   it means all attempts failed, and `exit 1` is called.
-RUN for SRV in hkp://p80.pool.sks-keyservers.net:80  ha.pool.sks-keyservers.net  keyserver.pgp.com  pgp.mit.edu; do \
-        timeout 9s  gpg  --keyserver "${SRV}"  --recv-keys "${KEY}"  >/dev/null 2<&1 && \
+# First, try to import key currently on @roasbeef's keybase account into GPG,
+# Second, also try to fetch that key from keyservers (in case it's not his key, or he already discarded it…).
+#   This command doesn't stop the flow on error, and
+#   Key verification happens in the next step
+RUN wget -qO- "https://keybase.io/${KEYBASE_USER}/pgp_keys.asc" | gpg --import && \
+    for SRV in hkp://p80.pool.sks-keyservers.net:80  ha.pool.sks-keyservers.net  keyserver.pgp.com  pgp.mit.edu; do \
+        timeout 9s  gpg  --keyserver "${SRV}"  --recv-key ${KEY}  >/dev/null 2<&1 && \
             { echo "OK:  ${SRV}" && exit 0; } || \
             { echo "ERR: ${SRV} fail=$?"; } ; \
-    done && exit 1
+    done
 
-RUN gpg --list-keys
+RUN gpg --list-keys && \
+    gpg --list-key ${KEY}
+
 
 RUN mkdir -p /go/src/
 
@@ -31,7 +37,7 @@ WORKDIR /go/src/lnd/
 #       through git verify-tag; What can possibly go wrong? 😅
 #       More: https://github.com/lightningnetwork/lnd/issues/3507#issuecomment-532414524
 RUN git verify-tag "${TAG}" || \
-    { git verify-tag --raw "${TAG}" 2>&1 | grep EXPKEYSIG && echo "Accepting expired key!"; }
+    { git verify-tag --raw "${TAG}" 2>&1 | grep EXPKEYSIG && echo "Accepting valid signature with an expired key!"; }
 
 # NOTE: context: https://github.com/lightningnetwork/lnd/issues/3506
 RUN go mod edit -replace="github.com/btcsuite/btcwallet=github.com/btcsuite/btcwallet@v0.0.0-20190814023431-505acf51507f"
