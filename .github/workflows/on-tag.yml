@@ -191,6 +191,8 @@ jobs:
     runs-on: ubuntu-18.04
     needs: test
     steps:
+      - uses: actions/checkout@v1.0.0
+
       - name: Setup environment
         run: |
           echo ::set-env name=DOCKER_USER::"${GITHUB_ACTOR,,}"
