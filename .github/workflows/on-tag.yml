@@ -197,10 +197,15 @@ jobs:
           echo ::set-env name=SLUG::"$(echo ${GITHUB_REPOSITORY,,} | sed 's/docker-//')"
 
           TAG="$(echo "${GITHUB_REF}" | grep 'refs/tags/' | awk -F/ '{print $NF}')"
-          echo ::set-env name=TAG::"${TAG}"
 
           VERSION="$(echo "${TAG}" | cut -d+ -f1)"
           echo ::set-env name=VERSION::"${VERSION}"
+
+          BUILD="$(echo "+${TAG}" | cut -d+ -f3)"
+          if [[ -z "${BUILD}" ]]; then
+            echo "ERR '+build<N>' must be appended to the git tag"
+            exit 1
+          fi
 
       - name: Enable manifests
         run: |
@@ -230,8 +235,8 @@ jobs:
       - name: Version-tag all images
         run: |
           for arch in $(docker images lnd --format "{{.Tag}}"); do
+            docker tag  "lnd:${arch}"  "${SLUG}:${VERSION}-${arch}-${BUILD}"
             docker tag  "lnd:${arch}"  "${SLUG}:${VERSION}-${arch}"
-            docker tag  "lnd:${arch}"  "${SLUG}:${TAG}-${arch}"
           done
 
       - name: List all tagged images
