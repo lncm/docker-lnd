@@ -24,6 +24,16 @@ jobs:
     steps:
       - uses: actions/checkout@v1.0.0
 
+      - name: Verify all patches apply cleanly
+        run: |
+          cd ${{matrix.ver}}/
+
+          for patch in ./variant-*.patch; do
+            patch --dry-run < "${patch}"
+          done
+
+          cd ..
+
       - name: Set target platform
         if: matrix.arch != 'amd64'
         run: ./scripts/ci-set-target-image-architecture.sh  "${{matrix.arch}}"  "${{matrix.ver}}/Dockerfile"
@@ -59,9 +69,6 @@ jobs:
       - name: Build lnd (v0.7++)
         if: matrix.ver != 0.5 && matrix.ver != 0.6
         run: >
-          # TODO: Test variant build
-          (cd "${{matrix.ver}}/"  &&  patch < variant-monitoring.patch)
-
           DOCKER_BUILDKIT=1 docker build --no-cache "${{matrix.ver}}/"
           --build-arg "goarch=${{matrix.arch}}"
           --tag       "lnd:${{matrix.ver}}-${{matrix.arch}}"
