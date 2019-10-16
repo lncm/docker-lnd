@@ -136,7 +136,8 @@ jobs:
           docker cp  "${ID}:/bin/lncli"  binaries/
           docker rm  "${ID}"
 
-          gzip -S "-${TAG}-${{matrix.arch}}.gz" binaries/*
+          SUF="$(echo "${TAG}-${{matrix.arch}}" | tr + -)"
+          gzip  -S "-${SUF}.gz"  binaries/*
 
       - name: Print sha256sum of extracted binaries
         run: sha256sum binaries/*
