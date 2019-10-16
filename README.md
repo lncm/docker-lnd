@@ -1,6 +1,20 @@
-# docker-lnd
+lncm/docker-lnd
+================
 
-[![Build Status](https://travis-ci.com/lncm/docker-lnd.svg)](https://travis-ci.com/lncm/docker-lnd) ![](https://img.shields.io/microbadger/image-size/lncm/lnd/0.7.1.svg?style=flat) ![](https://img.shields.io/docker/pulls/lncm/lnd.svg?style=flat)
+![Build Status]
+[![gh_last_release_svg]][gh_last_release_url]
+[![Docker Image Size]][lnd-docker-hub]
+[![Docker Pulls Count]][lnd-docker-hub]
+
+[Build Status]: https://github.com/lncm/docker-lnd/workflows/Build%20%26%20deploy%20tag/badge.svg
+
+[gh_last_release_svg]: https://img.shields.io/github/v/release/lncm/docker-lnd?sort=semver
+[gh_last_release_url]: https://github.com/lncm/docker-lnd/releases/latest
+
+[Docker Image Size]: https://img.shields.io/microbadger/image-size/lncm/lnd.svg
+[Docker Pulls Count]: https://img.shields.io/docker/pulls/lncm/lnd.svg?style=flat
+[lnd-docker-hub]: https://hub.docker.com/r/lncm/lnd
+
 
 This Dockerfile is based on the [Dockerfile] officially provided within the `lnd` repo. 
 
@@ -16,16 +30,21 @@ The changes from upstream include:
 
 ## Tags
 
-* `latest`, `0.7`, `0.7.1` - currently _latest_ version of lnd for `arm32v6`, `arm32v7` and `amd64` ([log][log-agg]);
-* `0.7.1-linux-armv6` - LND version 0.7.1 for `arm32v6` architecture, [built on Travis][log-arm6];
-* `0.7.1-linux-armv7` - LND version 0.7.1 for `arm32v7` architecture, [built on Travis][log-arm7];
-* `0.7.1-linux-amd64` - LND version 0.7.1 for `amd64` architecture, [built on Travis][log-amd64].
+* [`v0.8.0` (`+build7`)][build7] - currently _latest_ version of `lnd` (see [log][log7])
+    * `v0.8.0-amd64`,  `v0.8.0.arm64`, `v0.8.0-arm32v7`, `v0.8.0-arm32v6`
+* [`v0.8.0-monitoring` (`+build9`)][build9] - latest version of lnd with [monitoring] enabled (see [log][log9])
+* [`v0.7.1` (`+build11`)][build11] (see [log][log11])
 
-[log-agg]: https://travis-ci.com/lncm/docker-lnd/builds/121961116
-[log-arm6]: https://travis-ci.com/lncm/docker-lnd/jobs/222464498
-[log-arm7]: https://travis-ci.com/lncm/docker-lnd/jobs/222464499
-[log-amd64]: https://travis-ci.com/lncm/docker-lnd/jobs/222464497
 
+[build7]: https://github.com/lncm/docker-lnd/releases/tag/v0.8.0%2Bbuild7    
+[log7]: https://github.com/lncm/docker-lnd/runs/262864700
+
+[build9]: https://github.com/lncm/docker-lnd/releases/tag/v0.8.0-monitoring%2Bbuild9
+[log9]: https://github.com/lncm/docker-lnd/runs/262901705
+[monitoring]: https://github.com/lightningnetwork/lnd/blob/v0.8.0-beta/monitoring/monitoring_on.go
+
+[build11]: https://github.com/lncm/docker-lnd/releases/tag/v0.7.1%2Bbuild11
+[log11]: https://github.com/lncm/docker-lnd/runs/263056982
 
 
 ## Usage
@@ -36,7 +55,7 @@ The changes from upstream include:
 First pull the image from [Docker Hub]:
 
 ```bash
-docker pull lncm/lnd:0.7
+docker pull lncm/lnd:v0.8.0
 ```
 
 > **NOTE:** Running above will automatically choose native architecture of your CPU.
@@ -55,7 +74,7 @@ docker run -it --rm \
     -p 10009:10009 \
     --name lnd \
     --detach \
-    lncm/lnd:0.7
+    lncm/lnd:v0.8.0
 ```
 
 That will run lnd such that:
