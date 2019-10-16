@@ -1,4 +1,4 @@
-name: Build & deploy on tag push
+name: Build & deploy tag
 
 on:
   push:
