@@ -1,8 +1,21 @@
 diff --git Dockerfile Dockerfile
-index b6123d3..c1c4301 100644
+index b6123d3..72599f5 100644
 --- Dockerfile
 +++ Dockerfile
-@@ -157,8 +157,11 @@ COPY  --from=cross-check  /bin/lncli  /bin/
+@@ -47,11 +47,9 @@ RUN go mod tidy
+ RUN git diff go.mod go.sum
+ 
+ 
+-ENV BUILDFILE_HASH=a981094129632db17661613fe9d20e0e6b15aa498c65355e2088699b24c97f10
+ COPY ./build.sh .
+ 
+-# Verify that the build file is what's expected
+-RUN echo "${BUILDFILE_HASH}  build.sh" | sha256sum -c
++# No hash-verification of `./build.sh` for variants yet
+ 
+ 
+ 
+@@ -157,8 +155,11 @@ COPY  --from=cross-check  /bin/lncli  /bin/
  # Define a root volume for data persistence.
  VOLUME /root/.lnd
  
