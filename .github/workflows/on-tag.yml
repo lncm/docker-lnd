@@ -193,6 +193,8 @@ jobs:
     steps:
       - name: Setup environment
         run: |
+          echo "${GITHUB_REF}"
+
           TAG="$(echo "${GITHUB_REF}" | grep 'refs/tags/' | awk -F/ '{print $NF}')"
           VERSION="$(echo "${TAG}" | cut -d+ -f1)"
 
