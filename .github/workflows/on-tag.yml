@@ -1,0 +1,281 @@
+name: Build & deploy on tag push
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build:
+    name: Build lnd
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        arch:
+          - amd64
+          - arm64
+          - arm32v6
+          - arm32v7
+
+    steps:
+      - uses: actions/checkout@v1.0.0
+
+      - name: Set env vars from git tag
+        run: |
+          # Verify it's a git-tag push, and extract the tag
+          TAG="$(echo "${GITHUB_REF}" | grep 'refs/tags/' | awk -F/ '{print $NF}')"
+          if [[ -z "${TAG}" ]]; then
+            echo "This action has to be run by a git-tag push"
+            exit 1
+          fi
+
+          # NOTE: At this point ${TAG} ~= vX.Y.Z[-<variant>][+build<N>]
+          echo "${TAG}"
+
+          # Extract directory to be used for the build
+          echo ::set-env name=DIR::"$(echo "${TAG}" | tr -d v | cut -d. -f-2)"
+          DIR="$(echo "${TAG}" | tr -d v | cut -d. -f-2)"
+
+          # Extract optional variant to be built
+          #   NOTE: `-` prepended to TAG helps to deal with `cut` ignoring `-f` when no matches for `-d` are found.
+          VARIANT="$(echo "-${TAG}" | cut -d- -f3- | cut -d+ -f1)"
+
+          # Print what variables will be used
+          printf "Git tag processed:\n"
+          printf "    TAG: %s\n"  "${TAG}"
+          printf "VARIANT: %s\n"  "${VARIANT}"
+          printf "    DIR: %s\n"  "${DIR}"
+
+          # Set env variables
+          echo ::set-env name=TAG::"${TAG}"
+          echo ::set-env name=VARIANT::"${VARIANT}"
+          echo ::set-env name=DIR::"${DIR}"
+
+      - name: Apply variant patches
+        run: |
+          if [[ -z "${VARIANT}" ]]; then
+            echo "No variant detected.  Skipping."
+            exit 0
+          fi
+
+          (cd "${DIR}/"  &&  patch < variant-${VARIANT}.patch)
+
+      - name: Set target platform
+        if: matrix.arch != 'amd64'
+        run: ./scripts/ci-set-target-image-architecture.sh  "${{matrix.arch}}"  "${DIR}/Dockerfile"
+
+      - name: Build lnd (v0.5.x)
+        run: >
+          if [[ "${DIR}" != "0.5" ]]; then
+            echo "Not v0.5.x branch.  Skipping."
+            exit 0
+          fi
+
+          case "${{matrix.arch}}" in
+          arm32v6) export GOARCH=arm GOARM=6        ;;
+          arm32v7) export GOARCH=arm GOARM=7        ;;
+          *)       export GOARCH="${{matrix.arch}}" ;;
+          esac
+
+          docker build --no-cache "${DIR}/"
+          --build-arg "goos=linux"
+          --build-arg "goarch=${GOARCH}"
+          --build-arg "goarm=${GOARM}"
+          --tag       "lnd:${{matrix.arch}}"
+
+      - name: Build lnd (v0.6.x)
+        run: >
+          if [[ "${DIR}" != "0.6" ]]; then
+            echo "Not v0.6.x branch.  Skipping."
+            exit 0
+          fi
+
+          case "${{matrix.arch}}" in
+          arm32v6) export ARCH='linux-armv6'            ;;
+          arm32v7) export ARCH='linux-armv7'            ;;
+          *)       export ARCH="linux-${{matrix.arch}}" ;;
+          esac
+
+          docker build --no-cache "${DIR}/"
+          --build-arg "arch=${ARCH}"
+          --tag       "lnd:${{matrix.arch}}"
+
+      - name: Build lnd (v0.7++)
+        if: matrix.ver != 0.5 && matrix.ver != 0.6
+        run: >
+          if [[ "${DIR}" = "0.5" ]] || [[ "${DIR}" = "0.6" ]]; then
+            echo "Older release detected.  Skipping."
+            exit 0
+          fi
+
+          DOCKER_BUILDKIT=1 docker build --no-cache "${DIR}/"
+          --build-arg "goarch=${{matrix.arch}}"
+          --tag       "lnd:${{matrix.arch}}"
+
+      - name: Show built image details
+        run: docker images lnd
+
+      - name: Save image to a .tgz file
+        run: |
+          mkdir -p image/
+          docker save "lnd:${{matrix.arch}}" | gzip > "image/lnd-${TAG}-${{matrix.arch}}.tgz"
+
+      - name: Print sha256sum of produced Docker image
+        run: sha256sum "image/lnd-${TAG}-${{matrix.arch}}.tgz"
+
+      - name: Add Docker image as build artifact
+        uses: actions/upload-artifact@v1.0.0
+        with:
+          name: docker-images
+          path: image/
+
+      - name: Extract binaries from the built image
+        run: |
+          mkdir -p bins/ binaries/
+          ID=$(docker create "lnd:${{matrix.ver}}-${{matrix.arch}}")
+          docker cp  "${ID}:/bin/lnd"    bins/
+          docker cp  "${ID}:/bin/lncli"  bins/
+          docker rm  "${ID}"
+
+          tar  -C bins/  -cvaf "binaries/lnd-${TAG}-${{matrix.arch}}.tgz"  .
+
+      - name: Print sha256sum of extracted binaries
+        run: sha256sum bins/*
+
+      - name: Add raw binaries as build artifacts
+        uses: actions/upload-artifact@v1.0.0
+        with:
+          name: binaries
+          path: binaries/
+
+  test:
+    name: Check sanity of images
+    runs-on: ubuntu-18.04
+    needs: build
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v1.0.0
+        with:
+          name: docker-images
+
+      - name: Print sha256sum of all Docker images
+        run: sha256sum docker-images/*
+
+      - name: Register self-compiled qemu
+        run: docker run --rm --privileged "meedamian/simple-qemu:v4.1.0" -p yes
+
+      - name: Load all images locally
+        run: ls -d docker-images/* | xargs -I %  docker load -i "%"
+
+      - name: List all tagged images
+        run: docker images lnd
+
+      - name: Run sanity checks
+        run: |
+          for tag in $(docker images lnd --format "{{.Tag}}"); do
+            echo
+            echo "~~~~~ lnd:${tag} ~~~~~"
+            docker run --rm                         "lnd:${tag}" --version
+            docker run --rm --entrypoint=lncli      "lnd:${tag}" --version
+
+            docker run --rm --entrypoint=uname      "lnd:${tag}" -a
+            docker run --rm --entrypoint=cat        "lnd:${tag}" /etc/os-release
+            docker run --rm --entrypoint=sha256sum  "lnd:${tag}" /bin/lnd /bin/lncli
+
+            docker run --rm --entrypoint=sh    "lnd:${tag}" -c 'apk add --no-cache file && file /bin/lnd /bin/lncli'
+          done
+
+  docker-hub:
+    name: Tag & deploy to Docker Hub.  Only after successful build & test.
+
+    runs-on: ubuntu-18.04
+    needs: test
+    steps:
+      - name: Setup environment
+        run: |
+          TAG="$(echo "${GITHUB_REF}" | grep 'refs/tags/' | awk -F/ '{print $NF}')"
+          VERSION="$(echo "${TAG}" | cut -d+ -f1)"
+
+          echo ::set-env name=DOCKER_USER::"${GITHUB_ACTOR,,}"
+          echo ::set-env name=SLUG::"$(echo ${GITHUB_REPOSITORY,,} | sed 's/docker-//')"
+          echo ::set-env name=VERSION::"${VERSION}"
+
+      - name: Enable manifests
+        run: |
+          mkdir -p ~/.docker
+
+          echo '{ "experimental": "enabled" }' > ~/.docker/config.json
+          sudo systemctl restart docker
+          docker version
+
+      - name: Login to Docker Hub
+        run: |
+          echo "Logging in as ${DOCKER_USER}…"
+          echo "${{secrets.DOCKER_TOKEN}}" | docker login -u="${DOCKER_USER}" --password-stdin
+
+      - name: Download images built in prev job
+        uses: actions/download-artifact@v1.0.0
+        with:
+          name: docker-images
+
+      - name: Print sha256sum of all Docker images
+        run: sha256sum docker-images/*
+
+      - name: Load all images locally
+        run: ls -d docker-images/* | xargs -I %  docker load -i "%"
+
+      # No short tags.  lnd releases are quite chaotic, it's better to no provide convenience that can easily backfire.
+      - name: Version-tag all images
+        run: |
+          for arch in $(docker images bitcoind --format "{{.Tag}}"); do
+            docker tag  "lnd:${arch}"  "${SLUG}:${VERSION}-${arch}"
+            docker tag  "lnd:${arch}"  "${SLUG}:${TAG}-${arch}"
+          done
+
+      - name: List all tagged images
+        run: docker images "${SLUG}"
+
+      - name: Push all images
+        run: docker images "${SLUG}" --format "{{.Repository}}:{{.Tag}}" | xargs -I %  docker push %
+
+      - name: Create manifest
+        run: >
+          docker -D manifest create  "${SLUG}:${VERSION}"  \
+            "${SLUG}:${VERSION}-amd64" \
+            "${SLUG}:${VERSION}-arm64" \
+            "${SLUG}:${VERSION}-arm32v6" \
+            "${SLUG}:${VERSION}-arm32v7"
+
+      - name: Annotate arm32v6
+        run: docker manifest annotate "${SLUG}:${VERSION}" "${SLUG}:${VERSION}-arm32v6" --os linux --arch arm   --variant v6
+
+      - name: Annotate arm32v7
+        run: docker manifest annotate "${SLUG}:${VERSION}" "${SLUG}:${VERSION}-arm32v7" --os linux --arch arm   --variant v7
+
+      - name: Annotate arm64v8
+        run: docker manifest annotate "${SLUG}:${VERSION}" "${SLUG}:${VERSION}-arm64"   --os linux --arch arm64 --variant v8
+
+      - name: Push manifest
+        run: docker manifest push "${SLUG}:${VERSION}"
+
+      - name: Sync README.md and Description to Docker Hub
+        uses: meeDamian/sync-readme@v1.0.5
+        with:
+          pass: ${{secrets.DOCKER_TOKEN}}
+          slug: lncm/lnd
+          description: true
+
+      - name: Download binaries in prev job
+        uses: actions/download-artifact@v1.0.0
+        with:
+          name: binaries
+
+      - name: Upload all artifact to Github Release
+        uses: meeDamian/github-release@v1.0.1
+        with:
+          token: ${{secrets.GITHUB_TOKEN}}
+          gzip: false
+          files: >
+            docker-images/*
+            binaries/*
