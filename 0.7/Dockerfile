@@ -49,8 +49,13 @@ RUN go mod tidy
 
 RUN git diff go.mod go.sum
 
+
+ENV BUILDFILE_HASH=6b8357170bc5b911b9ce2026af14c47413975af94070fa74af54bf5dd5548f86
 COPY ./build.sh .
-# TODO:  verify hash of ./build.sh file
+
+# Verify that the build file is what's expected
+RUN echo "${BUILDFILE_HASH}  build.sh" | sha256sum -c
+
 
 
 FROM golang:1.13-alpine3.10 AS alpine-builder
