@@ -117,10 +117,10 @@ jobs:
       - name: Save image to a .tgz file
         run: |
           mkdir -p image/
-          docker save "lnd:${{matrix.arch}}" | gzip > "image/lnd-${TAG}-${{matrix.arch}}.tgz"
+          docker save "lnd:${{matrix.arch}}" | gzip > "image/docker-lnd-${TAG}-${{matrix.arch}}.tgz"
 
       - name: Print sha256sum of produced Docker image
-        run: sha256sum "image/lnd-${TAG}-${{matrix.arch}}.tgz"
+        run: sha256sum "image/*"
 
       - name: Add Docker image as build artifact
         uses: actions/upload-artifact@v1.0.0
@@ -130,16 +130,16 @@ jobs:
 
       - name: Extract binaries from the built image
         run: |
-          mkdir -p bins/ binaries/
+          mkdir -p binaries/
           ID=$(docker create "lnd:${{matrix.arch}}")
-          docker cp  "${ID}:/bin/lnd"    bins/
-          docker cp  "${ID}:/bin/lncli"  bins/
+          docker cp  "${ID}:/bin/lnd"    binaries/
+          docker cp  "${ID}:/bin/lncli"  binaries/
           docker rm  "${ID}"
 
-          tar  -C bins/  -cvaf "binaries/lnd-${TAG}-${{matrix.arch}}.tgz"  .
+          gzip -S "-${TAG}-${{matrix.arch}}.gz" binaries/*
 
       - name: Print sha256sum of extracted binaries
-        run: sha256sum bins/*
+        run: sha256sum binaries/*
 
       - name: Add raw binaries as build artifacts
         uses: actions/upload-artifact@v1.0.0
