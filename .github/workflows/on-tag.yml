@@ -274,6 +274,7 @@ jobs:
         uses: meeDamian/github-release@v1.0.1
         with:
           token: ${{secrets.GITHUB_TOKEN}}
+          prerelease: true
           gzip: false
           files: >
             docker-images/*
