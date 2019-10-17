@@ -1,0 +1,31 @@
+diff --git Dockerfile Dockerfile
+index b6123d3..993587e 100644
+--- Dockerfile
++++ Dockerfile
+@@ -47,12 +47,8 @@ RUN go mod tidy
+ RUN git diff go.mod go.sum
+ 
+ 
+-ENV BUILDFILE_HASH=a981094129632db17661613fe9d20e0e6b15aa498c65355e2088699b24c97f10
+ COPY ./build.sh .
+ 
+-# Verify that the build file is what's expected
+-RUN echo "${BUILDFILE_HASH}  build.sh" | sha256sum -c
+-
+ 
+ 
+ FROM golang:1.13-alpine3.10 AS alpine-builder
+diff --git build.sh build.sh
+index 7b57e1e..b424ee5 100755
+--- build.sh
++++ build.sh
+@@ -28,6 +28,9 @@ LDFLAGS="${LDFLAGS} -X ${PKG}/build.Commit=$(git describe --abbrev=40)"
+ #   src: https://github.com/lightningnetwork/lnd/blob/v0.8.0-beta-rc2/build/release/release.sh#L97-L98
+ TAGS="autopilotrpc invoicesrpc walletrpc routerrpc watchtowerrpc"
+ 
++# Added by yours truly (@lncm)
++TAGS="${TAGS} experimental"
++
+ # Added to make output binary static
+ #   ctx: https://github.com/golang/go/issues/26492
+ TAGS="${TAGS} osusergo netgo static_build"
