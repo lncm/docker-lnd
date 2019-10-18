@@ -1,0 +1,45 @@
+diff --git Dockerfile Dockerfile
+index b6123d3..72599f5 100644
+--- Dockerfile
++++ Dockerfile
+@@ -47,11 +47,9 @@ RUN go mod tidy
+ RUN git diff go.mod go.sum
+ 
+ 
+-ENV BUILDFILE_HASH=a981094129632db17661613fe9d20e0e6b15aa498c65355e2088699b24c97f10
+ COPY ./build.sh .
+ 
+-# Verify that the build file is what's expected
+-RUN echo "${BUILDFILE_HASH}  build.sh" | sha256sum -c
++# No hash-verification of `./build.sh` for variants yet
+ 
+ 
+ 
+@@ -157,8 +155,11 @@ COPY  --from=cross-check  /bin/lncli  /bin/
+ # Define a root volume for data persistence.
+ VOLUME /root/.lnd
+ 
+-# Expose lnd ports (rest, p2p, rpc respectively).
+-EXPOSE 8080 9735 10009
++# Expose lnd ports (rest, monitoring, p2p, rpc respectively).
++EXPOSE 8080 8989 9735 10009
+ 
+ # Specify the start command and entrypoint as the lnd daemon.
+ ENTRYPOINT ["lnd"]
++
++# Okay to hardcode them here, as it's in a variant that specifically wants Prometheus
++CMD ["--prometheus.enable", "--prometheus.listen=0.0.0.0:8989"]
+diff --git build.sh build.sh
+index 7b57e1e..3d97508 100755
+--- build.sh
++++ build.sh
+@@ -32,6 +32,9 @@ TAGS="autopilotrpc invoicesrpc walletrpc routerrpc watchtowerrpc"
+ #   ctx: https://github.com/golang/go/issues/26492
+ TAGS="${TAGS} osusergo netgo static_build"
+ 
++# Added by yours truly (@lncm) to enable monitoring
++TAGS="${TAGS} monitoring"
++
+ 
+ build() {
+   binary_name=$1

@@ -2,11 +2,11 @@ FROM golang:1.13-alpine3.10 AS preparer
 
 RUN apk add --no-cache  gnupg  git
 
-ENV TAG v0.7.1-beta
+ENV TAG v0.8.0-beta
 
 
 ENV KEYBASE_USER=roasbeef
-ENV KEY F8037E70C12C7A263C032508CE58F7F8E20FD9A2
+ENV KEY 4AB7F8DA6FAEBB3B70B1F903BC13F65E2DC84465
 
 # First, try to import key currently on @roasbeef's keybase account into GPG,
 # Second, also try to fetch that key from keyservers (in case it's not his key, or he already discarded it…).
@@ -39,9 +39,6 @@ WORKDIR /go/src/lnd/
 RUN git verify-tag "${TAG}" || \
     { git verify-tag --raw "${TAG}" 2>&1 | grep EXPKEYSIG && echo "Accepting valid signature with an expired key!"; }
 
-# NOTE: context: https://github.com/lightningnetwork/lnd/issues/3506
-RUN go mod edit -replace="github.com/btcsuite/btcwallet=github.com/btcsuite/btcwallet@v0.0.0-20190814023431-505acf51507f"
-
 # NOTE: needed to have deterministic builds
 RUN go mod edit -go=1.13
 
@@ -50,7 +47,7 @@ RUN go mod tidy
 RUN git diff go.mod go.sum
 
 
-ENV BUILDFILE_HASH=d25b712bb68060e809d7bd93e47e917f416f1b8f8a269e6df2055b3a514712c0
+ENV BUILDFILE_HASH=a981094129632db17661613fe9d20e0e6b15aa498c65355e2088699b24c97f10
 COPY ./build.sh .
 
 # Verify that the build file is what's expected

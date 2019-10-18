@@ -1,0 +1,156 @@
+name: Build branch
+
+on:
+  push:
+    branches:
+      - '*'
+
+jobs:
+  build:
+    name: Build lnd
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        ver:
+          - 0.5
+          - 0.6
+          - 0.7
+          - 0.8
+
+        arch:
+          - amd64
+          - arm64
+          - arm32v6
+          - arm32v7
+
+    steps:
+      - uses: actions/checkout@v1.0.0
+
+      - name: Verify all patches apply cleanly
+        run: |
+          if ! ls ${{matrix.ver}}/variant*.patch 1> /dev/null 2>&1; then
+              echo "No variants found. Skipping."
+              exit 0
+          fi
+
+          cd ${{matrix.ver}}/
+
+          for patch in ./variant-*.patch; do
+            patch --dry-run < "${patch}"
+          done
+
+          cd ..
+
+      - name: Set target platform
+        if: matrix.arch != 'amd64'
+        run: ./scripts/ci-set-target-image-architecture.sh  "${{matrix.arch}}"  "${{matrix.ver}}/Dockerfile"
+
+      - name: Build lnd (v0.5.x)
+        if: matrix.ver == '0.5'
+        run: >
+          case "${{matrix.arch}}" in
+          arm32v6) export GOARCH=arm GOARM=6        ;;
+          arm32v7) export GOARCH=arm GOARM=7        ;;
+          *)       export GOARCH="${{matrix.arch}}" ;;
+          esac
+
+          docker build --no-cache "${{matrix.ver}}/"
+          --build-arg "goos=linux"
+          --build-arg "goarch=${GOARCH}"
+          --build-arg "goarm=${GOARM}"
+          --tag       "lnd:${{matrix.ver}}-${{matrix.arch}}"
+
+      - name: Build lnd (v0.6.x)
+        if: matrix.ver == '0.6'
+        run: >
+          case "${{matrix.arch}}" in
+          arm32v6) export ARCH='linux-armv6'            ;;
+          arm32v7) export ARCH='linux-armv7'            ;;
+          *)       export ARCH="linux-${{matrix.arch}}" ;;
+          esac
+
+          docker build --no-cache "${{matrix.ver}}/"
+          --build-arg "arch=${ARCH}"
+          --tag       "lnd:${{matrix.ver}}-${{matrix.arch}}"
+
+      - name: Build lnd (v0.7++)
+        if: matrix.ver != 0.5 && matrix.ver != 0.6
+        run: >
+          DOCKER_BUILDKIT=1 docker build --no-cache "${{matrix.ver}}/"
+          --build-arg "goarch=${{matrix.arch}}"
+          --tag       "lnd:${{matrix.ver}}-${{matrix.arch}}"
+
+      - name: Show built image details
+        run: docker images lnd
+
+      - name: Save image to a .tgz file
+        run: |
+          mkdir -p image/
+          docker save "lnd:${{matrix.ver}}-${{matrix.arch}}" | gzip > "image/lnd-${{matrix.ver}}-${{matrix.arch}}.tgz"
+
+      - name: Print sha256sum of produced Docker image
+        run: sha256sum "image/lnd-${{matrix.ver}}-${{matrix.arch}}.tgz"
+
+      - name: Add Docker image as build artifact
+        uses: actions/upload-artifact@v1.0.0
+        with:
+          name: docker-images
+          path: image/
+
+      - name: Extract binaries from the built image
+        run: |
+          mkdir -p bins/ binaries/
+          ID=$(docker create "lnd:${{matrix.ver}}-${{matrix.arch}}")
+          docker cp  "${ID}:/bin/lnd"    bins/
+          docker cp  "${ID}:/bin/lncli"  bins/
+          docker rm  "${ID}"
+
+          tar  -C bins/  -cvaf "binaries/lnd-${{matrix.ver}}-${{matrix.arch}}.tgz"  .
+
+      - name: Print sha256sum of extracted binaries
+        run: sha256sum bins/*
+
+      - name: Add raw binaries as build artifacts
+        uses: actions/upload-artifact@v1.0.0
+        with:
+          name: binaries
+          path: binaries/
+
+  test:
+    name: Check sanity of images
+    runs-on: ubuntu-18.04
+    needs: build
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v1.0.0
+        with:
+          name: docker-images
+
+      - name: Print sha256sum of all Docker images
+        run: sha256sum docker-images/*
+
+      - name: Register self-compiled qemu
+        run: docker run --rm --privileged "meedamian/simple-qemu:v4.1.0" -p yes
+
+      - name: Load all images locally
+        run: ls -d docker-images/* | xargs -I %  docker load -i "%"
+
+      - name: List all tagged images
+        run: docker images lnd
+
+      - name: Run sanity checks
+        run: |
+          for tag in $(docker images lnd --format "{{.Tag}}"); do
+            echo
+            echo "~~~~~ lnd:${tag} ~~~~~"
+            docker run --rm                         "lnd:${tag}" --version
+            docker run --rm --entrypoint=lncli      "lnd:${tag}" --version
+
+            docker run --rm --entrypoint=uname      "lnd:${tag}" -a
+            docker run --rm --entrypoint=cat        "lnd:${tag}" /etc/os-release
+            docker run --rm --entrypoint=sha256sum  "lnd:${tag}" /bin/lnd /bin/lncli
+
+            docker run --rm --entrypoint=sh    "lnd:${tag}" -c 'apk add --no-cache file && file /bin/lnd /bin/lncli'
+          done

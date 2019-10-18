@@ -1,0 +1,44 @@
+diff --git Dockerfile Dockerfile
+index bdb831e..1aea83f 100644
+--- Dockerfile
++++ Dockerfile
+@@ -50,11 +50,9 @@ RUN go mod tidy
+ RUN git diff go.mod go.sum
+ 
+ 
+-ENV BUILDFILE_HASH=d25b712bb68060e809d7bd93e47e917f416f1b8f8a269e6df2055b3a514712c0
+ COPY ./build.sh .
+ 
+-# Verify that the build file is what's expected
+-RUN echo "${BUILDFILE_HASH}  build.sh" | sha256sum -c
++# No hash-verification of `./build.sh` for variants yet
+ 
+ 
+ 
+@@ -160,8 +158,11 @@ COPY  --from=cross-check  /bin/lncli  /bin/
+ # Define a root volume for data persistence.
+ VOLUME /root/.lnd
+ 
+-# Expose lnd ports (rest, p2p, rpc respectively).
+-EXPOSE 8080 9735 10009
++# Expose lnd ports (rest, monitoring, p2p, rpc respectively).
++EXPOSE 8080 8989 9735 10009
+ 
+ # Specify the start command and entrypoint as the lnd daemon.
+ ENTRYPOINT ["lnd"]
++
++# Okay to hardcode them here, as it's in a variant that specifically wants Prometheus
++CMD ["--prometheus.enable", "--prometheus.listen=0.0.0.0:8989"]
+diff --git build.sh build.sh
+index 3f4b6db..3f3e1c5 100755
+--- build.sh
++++ build.sh
+@@ -29,7 +29,7 @@ LDFLAGS="${LDFLAGS} -X ${PKG}/build.Commit=$(git describe --abbrev=40)"
+ TAGS="autopilotrpc invoicesrpc walletrpc routerrpc watchtowerrpc"
+ 
+ # Added by yours truly (@lncm)
+-TAGS="${TAGS} wtclientrpc"
++TAGS="${TAGS} wtclientrpc monitoring"
+ 
+ # Added to make output binary static
+ #   ctx: https://github.com/golang/go/issues/26492
