@@ -1,0 +1,15 @@
+diff --git Dockerfile Dockerfile
+index 6338001..43031e8 100644
+--- Dockerfile
++++ Dockerfile
+@@ -42,6 +42,10 @@ RUN git verify-tag "${TAG}" || \
+ # NOTE: needed to have deterministic builds
+ RUN go mod edit -go=1.13
+ 
++# NOTE: Fix compatibility with bitcoind v0.19.0+
++#       More: https://github.com/lightningnetwork/lnd/pull/3649
++RUN go mod edit -replace github.com/btcsuite/btcd=github.com/btcsuite/btcd@v0.20.0-beta.0.20191109022137-037489ef505e
++
+ RUN go mod tidy
+ 
+ RUN git diff go.mod go.sum
