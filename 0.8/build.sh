@@ -6,6 +6,16 @@ ARCH=$1
 
 PKG="github.com/lightningnetwork/lnd"
 
+# All our images are built for Linux
+export GOOS=linux
+
+# Process passed ARCH string into sth `go build` command understands
+case "${ARCH}" in
+arm32v6) export GOARCH=arm GOARM=6 ;;
+arm32v7) export GOARCH=arm GOARM=7 ;;
+*)       export GOARCH="${ARCH}"   ;;
+esac
+
 
 # [smaller output binaries] Disable DWARF generation, and symbol table respectively
 LDFLAGS="-w -s"
@@ -35,16 +45,6 @@ build() {
     -tags="${TAGS} ${extra_tags}" \
     "${PKG}/cmd/${binary_name}"
 }
-
-# All our images are built for Linux
-export GOOS=linux
-
-# Process passed ARCH string into sth `go build` command understands
-case "${ARCH}" in
-arm32v6) export GOARCH=arm GOARM=6 ;;
-arm32v7) export GOARCH=arm GOARM=7 ;;
-*)       export GOARCH="${ARCH}"   ;;
-esac
 
 build lncli
 build lnd "signrpc chainrpc"
