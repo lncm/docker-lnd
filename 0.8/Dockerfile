@@ -2,7 +2,7 @@ FROM golang:1.13-alpine3.10 AS preparer
 
 RUN apk add --no-cache  gnupg  git
 
-ENV TAG v0.8.0-beta
+ENV TAG v0.8.1-beta
 
 
 ENV KEYBASE_USER=roasbeef
