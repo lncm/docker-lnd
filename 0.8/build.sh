@@ -25,7 +25,7 @@ LDFLAGS="${LDFLAGS} -X ${PKG}/build.Commit=$(git describe --abbrev=40)"
 
 
 # original content
-#   src: https://github.com/lightningnetwork/lnd/blob/v0.8.0-beta-rc2/build/release/release.sh#L97-L98
+#   src: https://github.com/lightningnetwork/lnd/blob/v0.8.1-beta/build/release/release.sh#L97-L98
 TAGS="autopilotrpc invoicesrpc walletrpc routerrpc watchtowerrpc"
 
 # Added to make output binary static
