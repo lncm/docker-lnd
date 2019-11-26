@@ -30,14 +30,14 @@ jobs:
             exit 1
           fi
 
-          ::debug::"${TAG}"
+          echo ::debug::"${TAG}"
           echo ::set-env name=TAG::"${TAG}"
 
       - name: Set DIR (env var)
         run: |
           DIR="$(echo "${TAG}" | tr -d v | cut -d. -f-2)"
 
-          ::debug::"${DIR}"
+          echo ::debug::"${DIR}"
           echo ::set-env name=DIR::"${DIR}"
 
       # Extract optional variant to be built
@@ -46,7 +46,7 @@ jobs:
         run: |
           VARIANT="$(echo "-${TAG}" | cut -d- -f3- | cut -d+ -f1)"
 
-          ::debug::"${VARIANT}"
+          echo ::debug::"${VARIANT}"
           echo ::set-env name=VARIANT::"${VARIANT}"
 
       - name: Print just set ENV VARs
