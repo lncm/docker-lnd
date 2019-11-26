@@ -20,58 +20,54 @@ jobs:
     steps:
       - uses: actions/checkout@v1.0.0
 
-      - name: Set env vars from git tag
+      # Extract the tag, amd verify it was a git-tag push
+      #   NOTE: ${TAG} ~= vX.Y.Z[-<variant>][+build<N>]
+      - name: Set TAG (env var)
         run: |
-          # Verify it's a git-tag push, and extract the tag
           TAG="$(echo "${GITHUB_REF}" | grep 'refs/tags/' | awk -F/ '{print $NF}')"
           if [[ -z "${TAG}" ]]; then
             echo "This action has to be run by a git-tag push"
             exit 1
           fi
 
-          # NOTE: At this point ${TAG} ~= vX.Y.Z[-<variant>][+build<N>]
-          echo "${TAG}"
+          ::debug::"${TAG}"
+          echo ::set-env name=TAG::"${TAG}"
 
-          # Extract directory to be used for the build
-          echo ::set-env name=DIR::"$(echo "${TAG}" | tr -d v | cut -d. -f-2)"
+      - name: Set DIR (env var)
+        run: |
           DIR="$(echo "${TAG}" | tr -d v | cut -d. -f-2)"
 
-          # Extract optional variant to be built
-          #   NOTE: `-` prepended to TAG helps to deal with `cut` ignoring `-f` when no matches for `-d` are found.
+          ::debug::"${DIR}"
+          echo ::set-env name=DIR::"${DIR}"
+
+      # Extract optional variant to be built
+      #   NOTE: `-` prepended to TAG helps to deal with `cut` ignoring `-f` when no matches for `-d` are found.
+      - name: Set VARIANT (env var)
+        run: |
           VARIANT="$(echo "-${TAG}" | cut -d- -f3- | cut -d+ -f1)"
 
-          # Print what variables will be used
+          ::debug::"${VARIANT}"
+          echo ::set-env name=VARIANT::"${VARIANT}"
+
+      - name: Print just set ENV VARs
+        run: |
           printf "Git tag processed:\n"
           printf "    TAG: %s\n"  "${TAG}"
           printf "VARIANT: %s\n"  "${VARIANT}"
           printf "    DIR: %s\n"  "${DIR}"
 
-          # Set env variables
-          echo ::set-env name=TAG::"${TAG}"
-          echo ::set-env name=VARIANT::"${VARIANT}"
-          echo ::set-env name=DIR::"${DIR}"
-
-      - name: Apply variant patches
-        run: |
-          if [[ -z "${VARIANT}" ]]; then
-            echo "No variant detected.  Skipping."
-            exit 0
-          fi
-
-          (cd "${DIR}/"  &&  patch < variant-${VARIANT}.patch)
+      - name: Apply variant patch (if any)
+        if: env.VARIANT != ''
+        run: (cd "${DIR}/"  &&  patch < variant-${VARIANT}.patch)
 
       - name: Set target platform
         if: matrix.arch != 'amd64'
         run: ./scripts/ci-set-target-image-architecture.sh  "${{matrix.arch}}"  "${DIR}/Dockerfile"
 
       - name: Build lnd (v0.5.x)
+        if: env.DIR == 0.5
         run: >
-          if [[ "${DIR}" != "0.5" ]]; then
-            echo "Not v0.5.x branch.  Skipping."
-            exit 0
-          fi
-
-          case "${{matrix.arch}}" in
+        case "${{matrix.arch}}" in
           arm32v6) export GOARCH=arm GOARM=6        ;;
           arm32v7) export GOARCH=arm GOARM=7        ;;
           *)       export GOARCH="${{matrix.arch}}" ;;
@@ -84,12 +80,8 @@ jobs:
           --tag       "lnd:${{matrix.arch}}"
 
       - name: Build lnd (v0.6.x)
+        if: env.DIR == 0.6
         run: >
-          if [[ "${DIR}" != "0.6" ]]; then
-            echo "Not v0.6.x branch.  Skipping."
-            exit 0
-          fi
-
           case "${{matrix.arch}}" in
           arm32v6) export ARCH='linux-armv6'            ;;
           arm32v7) export ARCH='linux-armv7'            ;;
@@ -100,14 +92,12 @@ jobs:
           --build-arg "arch=${ARCH}"
           --tag       "lnd:${{matrix.arch}}"
 
-      - name: Build lnd (v0.7++)
+      - name: Build lnd
+        if: env.DIR != 0.5 && env.DIR != 0.6
+        env:
+          DOCKER_BUILDKIT: 1
         run: >
-          if [[ "${DIR}" = "0.5" ]] || [[ "${DIR}" = "0.6" ]]; then
-            echo "Older release detected.  Skipping."
-            exit 0
-          fi
-
-          DOCKER_BUILDKIT=1 docker build --no-cache "${DIR}/"
+          docker build --no-cache "${DIR}/"
           --build-arg "goarch=${{matrix.arch}}"
           --tag       "lnd:${{matrix.arch}}"
 
@@ -150,6 +140,7 @@ jobs:
           name: binaries
           path: binaries/
 
+
   test:
     name: Check sanity of images
     runs-on: ubuntu-18.04
@@ -178,6 +169,8 @@ jobs:
           for tag in $(docker images lnd --format "{{.Tag}}"); do
             echo
             echo "~~~~~ lnd:${tag} ~~~~~"
+            docker inspect "lnd:${tag}" | jq
+
             docker run --rm                         "lnd:${tag}" --version
             docker run --rm --entrypoint=lncli      "lnd:${tag}" --version
 
@@ -185,8 +178,9 @@ jobs:
             docker run --rm --entrypoint=cat        "lnd:${tag}" /etc/os-release
             docker run --rm --entrypoint=sha256sum  "lnd:${tag}" /bin/lnd /bin/lncli
 
-            docker run --rm --entrypoint=sh    "lnd:${tag}" -c 'apk add --no-cache file && file /bin/lnd /bin/lncli'
+            docker run --rm --entrypoint=sh         "lnd:${tag}" -c 'apk add --no-cache file && file /bin/lnd /bin/lncli'
           done
+
 
   docker-hub:
     name: Tag & deploy to Docker Hub.  Only after successful build & test.
@@ -213,6 +207,14 @@ jobs:
           fi
           echo ::set-env name=BUILD::"${BUILD}"
 
+      - name: Print just set ENV VARs
+        run: |
+          printf "Just set env vars:\n"
+          printf "    TAG: %s\n"  "${TAG}"
+          printf "   SLUG: %s\n"  "${SLUG}"
+          printf "VERSION: %s\n"  "${VERSION}"
+          printf "  BUILD: %s\n"  "${BUILD}"
+
       - name: Enable manifests
         run: |
           mkdir -p ~/.docker
@@ -226,7 +228,7 @@ jobs:
           echo "Logging in as ${DOCKER_USER}…"
           echo "${{secrets.DOCKER_TOKEN}}" | docker login -u="${DOCKER_USER}" --password-stdin
 
-      - name: Download images built in prev job
+      - name: Download images built in build job
         uses: actions/download-artifact@v1.0.0
         with:
           name: docker-images
@@ -268,6 +270,9 @@ jobs:
       - name: Annotate arm64v8
         run: docker manifest annotate "${SLUG}:${VERSION}" "${SLUG}:${VERSION}-arm64"   --os linux --arch arm64 --variant v8
 
+      - name: Print manifest's details
+        run: docker manifest inspect "${SLUG}:${VERSION}" | jq
+
       - name: Push manifest
         run: docker manifest push "${SLUG}:${VERSION}"
 
@@ -275,7 +280,7 @@ jobs:
         uses: meeDamian/sync-readme@v1.0.5
         with:
           pass: ${{secrets.DOCKER_TOKEN}}
-          slug: lncm/lnd
+          slug: ${{env.SLUG}}
           description: true
 
       - name: Download binaries from prev job

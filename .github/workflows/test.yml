@@ -2,8 +2,7 @@ name: Build branch
 
 on:
   push:
-    branches:
-      - '*'
+    branches: [ '*' ]
 
 jobs:
   build:
@@ -47,7 +46,7 @@ jobs:
         run: ./scripts/ci-set-target-image-architecture.sh  "${{matrix.arch}}"  "${{matrix.ver}}/Dockerfile"
 
       - name: Build lnd (v0.5.x)
-        if: matrix.ver == '0.5'
+        if: matrix.ver == 0.5
         run: >
           case "${{matrix.arch}}" in
           arm32v6) export GOARCH=arm GOARM=6        ;;
@@ -62,7 +61,7 @@ jobs:
           --tag       "lnd:${{matrix.ver}}-${{matrix.arch}}"
 
       - name: Build lnd (v0.6.x)
-        if: matrix.ver == '0.6'
+        if: matrix.ver == 0.6
         run: >
           case "${{matrix.arch}}" in
           arm32v6) export ARCH='linux-armv6'            ;;
@@ -74,7 +73,7 @@ jobs:
           --build-arg "arch=${ARCH}"
           --tag       "lnd:${{matrix.ver}}-${{matrix.arch}}"
 
-      - name: Build lnd (v0.7++)
+      - name: Build lnd
         if: matrix.ver != 0.5 && matrix.ver != 0.6
         run: >
           DOCKER_BUILDKIT=1 docker build --no-cache "${{matrix.ver}}/"
@@ -145,6 +144,8 @@ jobs:
           for tag in $(docker images lnd --format "{{.Tag}}"); do
             echo
             echo "~~~~~ lnd:${tag} ~~~~~"
+            docker inspect "lnd:${tag}" | jq
+
             docker run --rm                         "lnd:${tag}" --version
             docker run --rm --entrypoint=lncli      "lnd:${tag}" --version
 
@@ -152,5 +153,5 @@ jobs:
             docker run --rm --entrypoint=cat        "lnd:${tag}" /etc/os-release
             docker run --rm --entrypoint=sha256sum  "lnd:${tag}" /bin/lnd /bin/lncli
 
-            docker run --rm --entrypoint=sh    "lnd:${tag}" -c 'apk add --no-cache file && file /bin/lnd /bin/lncli'
+            docker run --rm --entrypoint=sh         "lnd:${tag}" -c 'apk add --no-cache file && file /bin/lnd /bin/lncli'
           done
