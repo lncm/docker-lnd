@@ -175,7 +175,7 @@ jobs:
           for tag in $(docker images lnd --format "{{.Tag}}"); do
             echo
             echo "~~~~~ lnd:${tag} ~~~~~"
-            docker inspect "lnd:${tag}" | jq
+            docker inspect "lnd:${tag}" | jq '.'
 
             docker run --rm                         "lnd:${tag}" --version
             docker run --rm --entrypoint=lncli      "lnd:${tag}" --version
@@ -277,7 +277,7 @@ jobs:
         run: docker manifest annotate "${SLUG}:${VERSION}" "${SLUG}:${VERSION}-arm64"   --os linux --arch arm64 --variant v8
 
       - name: Print manifest's details
-        run: docker manifest inspect "${SLUG}:${VERSION}" | jq
+        run: docker manifest inspect "${SLUG}:${VERSION}" | jq '.'
 
       - name: Push manifest
         run: docker manifest push "${SLUG}:${VERSION}"

@@ -144,7 +144,7 @@ jobs:
           for tag in $(docker images lnd --format "{{.Tag}}"); do
             echo
             echo "~~~~~ lnd:${tag} ~~~~~"
-            docker inspect "lnd:${tag}" | jq
+            docker inspect "lnd:${tag}" | jq '.'
 
             docker run --rm                         "lnd:${tag}" --version
             docker run --rm --entrypoint=lncli      "lnd:${tag}" --version
