@@ -1,5 +1,5 @@
 diff --git Dockerfile Dockerfile
-index 6338001..43031e8 100644
+index aeed5cc..40b4ba6 100644
 --- Dockerfile
 +++ Dockerfile
 @@ -42,6 +42,10 @@ RUN git verify-tag "${TAG}" || \
