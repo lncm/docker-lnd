@@ -67,7 +67,7 @@ jobs:
       - name: Build lnd (v0.5.x)
         if: env.DIR == 0.5
         run: >
-        case "${{matrix.arch}}" in
+          case "${{matrix.arch}}" in
           arm32v6) export GOARCH=arm GOARM=6        ;;
           arm32v7) export GOARCH=arm GOARM=7        ;;
           *)       export GOARCH="${{matrix.arch}}" ;;
