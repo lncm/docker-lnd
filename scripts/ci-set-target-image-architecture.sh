@@ -71,7 +71,7 @@ fi
 #     ⬇             ⬇           ⬇
 #   FROM armv7/alpine:3.10 AS final
 
-${SED} -i "s|^FROM \(.*final\)$|FROM $ARCH\1|" "${FILE}"
+${SED} -i "s|^FROM \(.*final\)$|FROM $ARCH/\1|" "${FILE}"
 
 echo "Dockerfile modified: CPU architecture of the final stage set to: ${CPU}"
 
