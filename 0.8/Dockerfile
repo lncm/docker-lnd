@@ -47,7 +47,7 @@ RUN go mod tidy
 RUN git diff go.mod go.sum
 
 
-ENV BUILDFILE_HASH=a981094129632db17661613fe9d20e0e6b15aa498c65355e2088699b24c97f10
+ENV BUILDFILE_HASH=6be7e0d0e6599301e88ee07c2299d6d4bcdd50f2072986bb535eeec1625e7964
 COPY ./build.sh .
 
 # Verify that the build file is what's expected
