@@ -57,8 +57,16 @@ fi
 #     1st section looks for a match.  Escaped \(\) define a _capture group_
 #     2nd section defines replacement.  `\1` is the value of the _capture group_ from the 1st section
 #
-## NOTE: Currently commented out, as it doesn't seem o work yet…
-#${SED} -i "s|^FROM \(.*final\)$|FROM --platform=linux/$CPU \1|" "${FILE}"
+platform() {
+  # Convert matrix-supplied architecture to a format understood by Docker's `--platform=`
+  case "$1" in
+  arm32v6)  CPU="arm/v6" ;;
+  arm32v7)  CPU="arm/v7" ;;
+  arm64)    CPU="arm64"  ;;
+  esac
+
+  ${SED} -i "s|^FROM \(.*final\)$|FROM --platform=linux/$CPU \1|" "${FILE}"
+}
 
 
 ##
@@ -70,9 +78,21 @@ fi
 #   FROM       alpine:3.10 AS final
 #     ⬇             ⬇           ⬇
 #   FROM armv7/alpine:3.10 AS final
+prefix() {
+  CPU="$1"
+  if [[ "${CPU}" == "arm64" ]]; then
+    CPU="arm64v8"
+  fi
 
-${SED} -i "s|^FROM \(.*final\)$|FROM $ARCH/\1|" "${FILE}"
+  ${SED} -i "s|^FROM \(.*final\)$|FROM $CPU/\1|" "${FILE}"
+}
 
-echo "Dockerfile modified: CPU architecture of the final stage set to: ${CPU}"
+## NOTE: Currently commented out, as it doesn't seem o work yet…
+#platform "${ARCH}"
+
+# TODO: fix `--platorm=`
+prefix "${ARCH}"
+
+echo "Dockerfile modified: 'final' stage is now:"
 
 grep '^FROM.*final$' "${FILE}"
