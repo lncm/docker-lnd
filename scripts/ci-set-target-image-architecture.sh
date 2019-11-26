@@ -38,6 +38,9 @@ if command -v gsed >/dev/null; then
   SED=gsed
 fi
 
+##
+## APPROACH #1 (new):  Use `--platform=` flag in the final `FROM` directive
+##
 # Decyphering `sed` expressions is always "fun"…  So to make it easier on the reader here's an explanation:
 # tl;dr: Replace last FROM with one that specifies target CPU architecture.
 #
@@ -53,7 +56,22 @@ fi
 #   `s/` - substitute; followed by two `|`-separated sections:
 #     1st section looks for a match.  Escaped \(\) define a _capture group_
 #     2nd section defines replacement.  `\1` is the value of the _capture group_ from the 1st section
-${SED} -i "s|^FROM \(.*final\)$|FROM --platform=linux/$CPU \1|" "${FILE}"
+#
+## NOTE: Currently commented out, as it doesn't seem o work yet…
+#${SED} -i "s|^FROM \(.*final\)$|FROM --platform=linux/$CPU \1|" "${FILE}"
+
+
+##
+## APPROACH #2 (old):  Use platform prefix for the image name
+##
+# This one does very similar things to the example above, except it uses the "raw" $ARCH, and
+# this is the permutation occuring:
+#
+#   FROM       alpine:3.10 AS final
+#     ⬇             ⬇           ⬇
+#   FROM armv7/alpine:3.10 AS final
+
+${SED} -i "s|^FROM \(.*final\)$|FROM $ARCH\1|" "${FILE}"
 
 echo "Dockerfile modified: CPU architecture of the final stage set to: ${CPU}"
 
