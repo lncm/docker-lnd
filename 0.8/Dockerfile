@@ -157,8 +157,8 @@ COPY  --from=cross-check  /bin/lncli  /bin/
 # Define a root volume for data persistence.
 VOLUME /root/.lnd
 
-# Expose lnd ports (rest, p2p, rpc respectively).
-EXPOSE 8080 9735 10009
+# Expose lnd ports (rest, p2p, watchtower, rpc respectively).
+EXPOSE 8080 9735 9911 10009
 
 # Specify the start command and entrypoint as the lnd daemon.
 ENTRYPOINT ["lnd"]

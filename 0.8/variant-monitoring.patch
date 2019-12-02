@@ -1,29 +1,28 @@
 diff --git Dockerfile Dockerfile
-index aeed5cc..21447bb 100644
+index b475f7f..8c2424d 100644
 --- Dockerfile
 +++ Dockerfile
-@@ -47,11 +47,8 @@ RUN go mod tidy
+@@ -46,12 +46,9 @@ RUN go mod tidy
+ 
  RUN git diff go.mod go.sum
  
- 
+-
 -ENV BUILDFILE_HASH=6be7e0d0e6599301e88ee07c2299d6d4bcdd50f2072986bb535eeec1625e7964
  COPY ./build.sh .
--
+ 
 -# Verify that the build file is what's expected
 -RUN echo "${BUILDFILE_HASH}  build.sh" | sha256sum -c
-+# No hash-verification of `./build.sh` for variants yet
++# NOTE: No hash-verification of `./build.sh` for variants yet
  
  
  
-@@ -157,8 +154,11 @@ COPY  --from=cross-check  /bin/lncli  /bin/
- # Define a root volume for data persistence.
- VOLUME /root/.lnd
+@@ -160,5 +157,11 @@ VOLUME /root/.lnd
+ # Expose lnd ports (rest, p2p, watchtower, rpc respectively).
+ EXPOSE 8080 9735 9911 10009
  
--# Expose lnd ports (rest, p2p, rpc respectively).
--EXPOSE 8080 9735 10009
-+# Expose lnd ports (rest, monitoring, p2p, rpc respectively).
-+EXPOSE 8080 8989 9735 10009
- 
++# Expose monitoring/Prometheus port
++EXPOSE 8989
++
  # Specify the start command and entrypoint as the lnd daemon.
  ENTRYPOINT ["lnd"]
 +
