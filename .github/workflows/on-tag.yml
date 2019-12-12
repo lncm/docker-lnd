@@ -282,12 +282,13 @@ jobs:
       - name: Push manifest
         run: docker manifest push "${SLUG}:${VERSION}"
 
-      - name: Sync README.md and Description to Docker Hub
-        uses: meeDamian/sync-readme@v1.0.5
-        with:
-          pass: ${{secrets.DOCKER_TOKEN}}
-          slug: ${{env.SLUG}}
-          description: true
+# Commented out due to changes in Docker Hub API, making it impossible to do it programmatically as of right now :(.
+#      - name: Sync README.md and Description to Docker Hub
+#        uses: meeDamian/sync-readme@v1.0.5
+#        with:
+#          pass: ${{secrets.DOCKER_TOKEN}}
+#          slug: ${{env.SLUG}}
+#          description: true
 
       - name: Download binaries from prev job
         uses: actions/download-artifact@v1.0.0
