@@ -19,7 +19,7 @@ DIR="$(echo "${VERSION}" | tr -d v | cut -d. -f-2)"
 
 # If variant is provided, verify it exists
 if [[ -n "${VARIANT}" ]] && [[ ! -f "${DIR}/variant-${VARIANT}.patch" ]]; then
-  >&2 printf "\nERR: missing variant:  variant passed as the 2nd argument, bu corresponding patch file is not present.  Try:\n"
+  >&2 printf "\nERR: missing variant:  variant passed as the 2nd argument, but corresponding patch file is not present.  Try:\n"
   >&2 printf "\t./%s  %s  %s\n\n"   "$(basename "$0")"  "v0.8.1"  "monitoring"
   exit 1
 fi
