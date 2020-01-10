@@ -42,7 +42,7 @@ jobs:
           cd ..
 
       - name: Set target platform
-        if: matrix.arch != 'amd64'
+        if: matrix.arch != 'amd64' && matrix.ver != 0.5 && matrix.ver != 0.6
         run: ./scripts/ci-set-target-image-architecture.sh  "${{matrix.arch}}"  "${{matrix.ver}}/Dockerfile"
 
       - name: Build lnd (v0.5.x OR v0.6.x)
