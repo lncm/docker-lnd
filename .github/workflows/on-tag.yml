@@ -67,16 +67,13 @@ jobs:
       - name: Build lnd (v0.5.x)
         if: env.DIR == 0.5
         run: >
-          case "${{matrix.arch}}" in
-          arm32v6) export GOARCH=arm GOARM=6        ;;
-          arm32v7) export GOARCH=arm GOARM=7        ;;
-          *)       export GOARCH="${{matrix.arch}}" ;;
-          esac
+          ARCH=${{matrix.arch}}
+          if [[ "${ARCH}" == "arm64" ]]; then
+            ARCH="arm64v8"
+          fi
 
           docker build --no-cache "${DIR}/"
-          --build-arg "goos=linux"
-          --build-arg "goarch=${GOARCH}"
-          --build-arg "goarm=${GOARM}"
+          --build-arg "ARCH=${ARCH}"
           --tag       "lnd:${{matrix.arch}}"
 
       - name: Build lnd (v0.6.x)
