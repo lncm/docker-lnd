@@ -42,6 +42,7 @@ ENV GODEBUG netdns=cgo
 
 # Install dependencies
 RUN apk add --no-cache alpine-sdk \
+    findutils \
     git \
     gnupg \
     gcc \
@@ -90,10 +91,21 @@ RUN go mod edit \
     -replace github.com/coreos/bbolt=github.com/coreos/bbolt@7ee3ded59d4835e10f3e7d0f7603c42aa5e83820 \
     -replace github.com/btcsuite/btcwallet=github.com/btcsuite/btcwallet@284e2e0e696e
 
+# Fixing dependencies breaks a script in `Makefile` that extracts commit hash of btcd to be installed.
+#   This `.patch` hardcodes the value of `BTCD_COMMIT` to `ed77733ec07dfc8a513741138419b8d9d3de9d2d`
+COPY ./fix-btcd-commit.patch .
+RUN patch < fix-btcd-commit.patch
+
 RUN go mod tidy
 
 # Print all source differences applied
 RUN git diff
+
+# TODO: tests don't work for some reason :(
+COPY --from=lncm/bitcoind:v0.18.1  /opt/bitcoin-0.18.1/bin/bitcoind     /usr/bin/
+COPY --from=lncm/bitcoind:v0.18.1  /opt/bitcoin-0.18.1/bin/bitcoin-cli  /usr/bin/
+
+RUN make unit
 
 # Build the binaries
 RUN make install

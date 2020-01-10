@@ -1,0 +1,17 @@
+diff --git Makefile Makefile
+index 21c6d36..3c6cac7 100644
+--- Makefile
++++ Makefile
+@@ -15,11 +15,7 @@ BTCD_DIR :=${GOPATH}/src/$(BTCD_PKG)
+ COMMIT := $(shell git describe --abbrev=40 --dirty)
+ LDFLAGS := -ldflags "-X $(PKG)/build.Commit=$(COMMIT)"
+ 
+-BTCD_COMMIT := $(shell cat go.mod | \
+-		grep $(BTCD_PKG) | \
+-		tail -n1 | \
+-		awk -F " " '{ print $$2 }' | \
+-		awk -F "/" '{ print $$1 }')
++BTCD_COMMIT := ed77733ec07dfc8a513741138419b8d9d3de9d2d
+ 
+ GOBUILD := GO111MODULE=on go build -v
+ GOINSTALL := GO111MODULE=on go install -v
