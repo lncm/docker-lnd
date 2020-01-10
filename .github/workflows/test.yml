@@ -45,32 +45,16 @@ jobs:
         if: matrix.arch != 'amd64'
         run: ./scripts/ci-set-target-image-architecture.sh  "${{matrix.arch}}"  "${{matrix.ver}}/Dockerfile"
 
-      - name: Build lnd (v0.5.x)
-        if: matrix.ver == 0.5
+      - name: Build lnd (v0.5.x OR v0.6.x)
+        if: matrix.ver == 0.5 || matrix.ver == 0.6
         run: >
-          case "${{matrix.arch}}" in
-          arm32v6) export GOARCH=arm GOARM=6        ;;
-          arm32v7) export GOARCH=arm GOARM=7        ;;
-          *)       export GOARCH="${{matrix.arch}}" ;;
-          esac
+          ARCH=${{matrix.arch}}
+          if [[ "${ARCH}" == "arm64" ]]; then
+            ARCH="arm64v8"
+          fi
 
           docker build --no-cache "${{matrix.ver}}/"
-          --build-arg "goos=linux"
-          --build-arg "goarch=${GOARCH}"
-          --build-arg "goarm=${GOARM}"
-          --tag       "lnd:${{matrix.ver}}-${{matrix.arch}}"
-
-      - name: Build lnd (v0.6.x)
-        if: matrix.ver == 0.6
-        run: >
-          case "${{matrix.arch}}" in
-          arm32v6) export ARCH='linux-armv6'            ;;
-          arm32v7) export ARCH='linux-armv7'            ;;
-          *)       export ARCH="linux-${{matrix.arch}}" ;;
-          esac
-
-          docker build --no-cache "${{matrix.ver}}/"
-          --build-arg "arch=${ARCH}"
+          --build-arg "ARCH=${ARCH}"
           --tag       "lnd:${{matrix.ver}}-${{matrix.arch}}"
 
       - name: Build lnd
