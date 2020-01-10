@@ -47,15 +47,15 @@ jobs:
 
       - name: Build lnd (v0.5.x OR v0.6.x)
         if: matrix.ver == 0.5 || matrix.ver == 0.6
-        run: >
+        run: |
           ARCH=${{matrix.arch}}
           if [[ "${ARCH}" == "arm64" ]]; then
             ARCH="arm64v8"
           fi
 
-          docker build --no-cache "${{matrix.ver}}/"
-          --build-arg "ARCH=${ARCH}"
-          --tag       "lnd:${{matrix.ver}}-${{matrix.arch}}"
+          docker build --no-cache "${{matrix.ver}}/" \
+            --build-arg "ARCH=${ARCH}" \
+            --tag       "lnd:${{matrix.ver}}-${{matrix.arch}}"
 
       - name: Build lnd
         if: matrix.ver != 0.5 && matrix.ver != 0.6

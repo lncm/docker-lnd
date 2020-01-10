@@ -66,15 +66,15 @@ jobs:
 
       - name: Build lnd (v0.5.x)
         if: env.DIR == 0.5 || env.DIR == 0.6
-        run: >
+        run: |
           ARCH=${{matrix.arch}}
           if [[ "${ARCH}" == "arm64" ]]; then
             ARCH="arm64v8"
           fi
 
-          docker build --no-cache "${DIR}/"
-          --build-arg "ARCH=${ARCH}"
-          --tag       "lnd:${{matrix.arch}}"
+          docker build --no-cache "${DIR}/" \
+            --build-arg "ARCH=${ARCH}" \
+            --tag       "lnd:${{matrix.arch}}"
 
       - name: Build lnd
         if: env.DIR != 0.5 && env.DIR != 0.6
