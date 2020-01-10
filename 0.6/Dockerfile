@@ -110,8 +110,8 @@ LABEL maintainer="Damian Mee (@meeDamian)"
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 # Copy binaries from the builder image.
-COPY --from=builder /go/bin/lnd     /usr/bin/
-COPY --from=builder /go/bin/lncli   /usr/bin/
+COPY --from=builder /go/bin/lnd     /bin/
+COPY --from=builder /go/bin/lncli   /bin/
 
 # Define a root volume for data persistence.
 VOLUME /root/.lnd
