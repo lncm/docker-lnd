@@ -1,26 +1,17 @@
 diff --git Dockerfile Dockerfile
-index 929d281..d437a9c 100644
+index 66eb2f4..cbc3e6f 100644
 --- Dockerfile
 +++ Dockerfile
-@@ -125,7 +125,7 @@ ENV TAGS="autopilotrpc invoicesrpc walletrpc routerrpc watchtowerrpc"
- ENV TAGS="${TAGS} osusergo netgo static_build"
+@@ -23,7 +23,7 @@ ARG TAGS_LND="signrpc chainrpc"
+ ARG TAGS_STATIC="osusergo netgo static_build"
  
  # Added by yours truly (@lncm)
--ENV TAGS="${TAGS} wtclientrpc"
-+ENV TAGS="${TAGS} wtclientrpc monitoring"
+-ARG TAGS_EXTRA="wtclientrpc"
++ARG TAGS_EXTRA="wtclientrpc monitoring"
  
  
- # Install dependencies
-@@ -179,7 +179,7 @@ ENV TAGS="autopilotrpc invoicesrpc walletrpc routerrpc watchtowerrpc"
- ENV TAGS="${TAGS} osusergo netgo static_build"
  
- # Added by yours truly (@lncm)
--ENV TAGS="${TAGS} wtclientrpc"
-+ENV TAGS="${TAGS} wtclientrpc monitoring"
- 
- RUN apt-get update \
-     && apt-get -y install \
-@@ -270,8 +270,11 @@ COPY  --from=cross-check  /bin/lncli  /bin/
+@@ -271,8 +271,11 @@ COPY  --from=cross-check /bin/lncli  /bin/
  # Define a root volume for data persistence.
  VOLUME /root/.lnd
  
