@@ -99,9 +99,6 @@ ENV GOARCH=arm  GOARM=6
 
 
 
-
-
-
 #
 ## This stage fetches, and verifies the source code, as well as applies necessary fixes
 #
@@ -175,6 +172,8 @@ RUN env && \
     go version && \
     go env
 
+# [smaller output binaries] Disable DWARF generation (-w), and symbol table (-s)
+# [binary version] Inject --version into the final binary (-X)
 RUN export LD="-w -s -X ${PKG}/build.Commit=$(git describe --abbrev=40)"; \
     echo "Building with ldflags: '${LD}'" && \
     go build -v  -trimpath  -mod=readonly \
@@ -220,6 +219,7 @@ RUN export LD="-w -s -X ${PKG}/build.Commit=$(git describe --abbrev=40)"; \
         "${PKG}/cmd/lncli"
 
 
+
 #
 ## This stage fetches built binaries from build stages, compares them, and if they're identical puts compressed binaries to `/bin/`
 #
@@ -253,6 +253,7 @@ RUN du          /alpine/*
 
 # If all are identical, proceed to move the binary into a more standard `/bin/`
 RUN mv  /alpine/*  /bin/
+
 
 
 #
