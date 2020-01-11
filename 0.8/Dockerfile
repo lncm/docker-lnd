@@ -37,7 +37,6 @@ ARG TAGS_EXTRA=""
 ## Stage defining Alpine environment
 FROM golang:${VER_GO}-alpine${VER_ALPINE} AS alpine-base
 
-ARG PKG
 ARG TAGS_BASE
 ARG TAGS_STATIC
 ARG TAGS_EXTRA
@@ -55,7 +54,6 @@ ENV GODEBUG netdns=cgo
 ## Stage defining Debian environment
 FROM golang:${VER_GO}-buster AS debian-base
 
-ARG PKG
 ARG TAGS_BASE
 ARG TAGS_STATIC
 ARG TAGS_EXTRA
@@ -156,6 +154,7 @@ RUN git diff
 #
 FROM ${ARCH}-alpine AS alpine-builder
 
+ARG PKG
 ARG TAGS_LND
 
 RUN apk add --no-cache  libc-dev  git  gcc
@@ -191,6 +190,7 @@ RUN export LD="-w -s -X ${PKG}/build.Commit=$(git describe --abbrev=40)"; \
 # NOTE: Comments that would be identical to Alpine stage skipped for brevity
 FROM ${ARCH}-debian AS debian-builder
 
+ARG PKG
 ARG TAGS_LND
 
 RUN apt-get update  &&  apt-get -y install  file  git
