@@ -158,6 +158,10 @@ Ex. If `lnd` gets updated from `v0.6.0-beta` to `v0.6.1-beta`, it's _usually_ en
 
 This releases might bring changes that are not backwards compatible.  To have separation, it's recommended to create `MAJOR.MINOR/` directory at repo's root, copy `Dockerfile` from the previous version, and follow the steps described in [Patch Release].
 
+One additional thing to be done here, is adding a new entry to `matrix.ver` in [`test.yml`] file to make sure that newly added version is being tested.
+
+[`test.yml`]: https://github.com/lncm/docker-lnd/blob/87a12b6787e4f38043d1bd320c1b0fb8a496e78b/.github/workflows/test.yml#L18-L22
+
 [Patch Release]: #Patch-Release 
 
 ### Trigger
