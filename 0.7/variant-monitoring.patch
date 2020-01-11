@@ -1,5 +1,5 @@
 diff --git Dockerfile Dockerfile
-index 66eb2f4..cbc3e6f 100644
+index 25c008f..5caf0b2 100644
 --- Dockerfile
 +++ Dockerfile
 @@ -23,7 +23,7 @@ ARG TAGS_LND="signrpc chainrpc"
@@ -11,7 +11,7 @@ index 66eb2f4..cbc3e6f 100644
  
  
  
-@@ -271,8 +271,11 @@ COPY  --from=cross-check /bin/lncli  /bin/
+@@ -272,8 +272,11 @@ COPY  --from=cross-check /bin/lncli  /bin/
  # Define a root volume for data persistence.
  VOLUME /root/.lnd
  
