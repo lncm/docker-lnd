@@ -143,7 +143,9 @@ RUN du          /alpine/*
 RUN mv  /alpine/*  /bin/
 
 
-# Start a new, final image
+#
+## This is the final image that gets shipped to Docker Hub
+#
 FROM alpine:3.10 AS final
 
 LABEL maintainer="Damian Mee (@meeDamian)"

@@ -108,7 +108,9 @@ RUN if [ -d /go/bin/linux_* ]; then \
 RUN upx -v /go/bin/*
 
 
-# Start a new, final image
+#
+## This is the final image that gets shipped to Docker Hub
+#
 FROM ${ARCH}/alpine:${VER_ALPINE} AS final
 
 LABEL maintainer="Damian Mee (@meeDamian)"
