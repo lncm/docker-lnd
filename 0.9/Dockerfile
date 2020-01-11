@@ -109,7 +109,7 @@ ARG VERSION
 RUN apk add --no-cache  gnupg  git
 
 ENV KEYBASE_USER=roasbeef
-ENV KEY 4AB7F8DA6FAEBB3B70B1F903BC13F65E2DC84465
+ENV KEYS 4AB7F8DA6FAEBB3B70B1F903BC13F65E2DC84465 C49CD91BF681FDAD9AE79BBEA61B9D4C393C59C7
 
 # First, try to import key currently on @roasbeef's keybase account into GPG,
 # Second, also try to fetch that key from keyservers (in case it's not his key, or he already discarded it…).
@@ -117,7 +117,7 @@ ENV KEY 4AB7F8DA6FAEBB3B70B1F903BC13F65E2DC84465
 #   Key verification happens in the next step
 RUN wget -qO- "https://keybase.io/${KEYBASE_USER}/pgp_keys.asc" | gpg --import && \
     for SRV in keyserver.ubuntu.com  hkp://p80.pool.sks-keyservers.net:80  ha.pool.sks-keyservers.net  keyserver.pgp.com  pgp.mit.edu; do \
-        timeout 9s  gpg  --keyserver "${SRV}"  --recv-key ${KEY}  >/dev/null 2<&1 && \
+        timeout 9s  gpg  --keyserver "${SRV}"  --recv-key ${KEYS}  >/dev/null 2<&1 && \
             { echo "OK:  ${SRV}" && exit 0; } || \
             { echo "ERR: ${SRV} fail=$?"; } ; \
     done
