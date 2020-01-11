@@ -1,15 +1,14 @@
 diff --git Dockerfile Dockerfile
-index aeed5cc..40b4ba6 100644
+index 3ca30a1..6612701 100644
 --- Dockerfile
 +++ Dockerfile
-@@ -42,6 +42,10 @@ RUN git verify-tag "${TAG}" || \
- # NOTE: needed to have deterministic builds
- RUN go mod edit -go=1.13
+@@ -142,7 +142,8 @@ RUN git verify-tag "${VERSION}" || \
+     { git verify-tag --raw "${VERSION}" 2>&1 | grep EXPKEYSIG && echo "Accepting valid signature with an expired key!"; }
  
-+# NOTE: Fix compatibility with bitcoind v0.19.0+
-+#       More: https://github.com/lightningnetwork/lnd/pull/3649
-+RUN go mod edit -replace github.com/btcsuite/btcd=github.com/btcsuite/btcd@v0.20.0-beta.0.20191109022137-037489ef505e
-+
+ # NOTE: needed to have deterministic builds
+-RUN go mod edit -go=1.13
++RUN go mod edit -go=1.13 \
++    -replace github.com/btcsuite/btcd=github.com/btcsuite/btcd@v0.20.0-beta.0.20191109022137-037489ef505e
+ 
  RUN go mod tidy
  
- RUN git diff go.mod go.sum
