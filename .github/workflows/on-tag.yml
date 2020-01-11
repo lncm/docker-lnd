@@ -33,6 +33,17 @@ jobs:
           echo ::debug::"${TAG}"
           echo ::set-env name=TAG::"${TAG}"
 
+      # Create $ARCH in form that can be used in Dockerfile as `FROM ${ARCH}/alpine`
+      - name: Set ARCH (env var)
+        run: |
+          ARCH=${{matrix.arch}}
+          if [[ "${ARCH}" == "arm64" ]]; then
+            ARCH="arm64v8"
+          fi
+
+          echo ::debug::"${ARCH}"
+          echo ::set-env name=ARCH::"${ARCH}"
+
       - name: Set DIR (env var)
         run: |
           DIR="$(echo "${TAG}" | tr -d v | cut -d. -f-2)"
@@ -51,38 +62,20 @@ jobs:
 
       - name: Print just set ENV VARs
         run: |
-          printf "Git tag processed:\n"
-          printf "    TAG: %s\n"  "${TAG}"
-          printf "VARIANT: %s\n"  "${VARIANT}"
-          printf "    DIR: %s\n"  "${DIR}"
+          printf "Git tag & arch processed:\n"
+          printf "   ARCH: %s (from %s)\n"  "${ARCH}" "${{matrix.arch}}"
+          printf "    TAG: %s\n"            "${TAG}"
+          printf "VARIANT: %s\n"            "${VARIANT}"
+          printf "    DIR: %s\n"            "${DIR}"
 
       - name: Apply variant patch (if any)
         if: env.VARIANT != ''
         run: (cd "${DIR}/"  &&  patch < variant-${VARIANT}.patch)
 
-      - name: Set target platform
-        if: matrix.arch != 'amd64'
-        run: ./scripts/ci-set-target-image-architecture.sh  "${{matrix.arch}}"  "${DIR}/Dockerfile"
-
-      - name: Build lnd (v0.5.x)
-        if: env.DIR == 0.5 || env.DIR == 0.6
-        run: |
-          ARCH=${{matrix.arch}}
-          if [[ "${ARCH}" == "arm64" ]]; then
-            ARCH="arm64v8"
-          fi
-
-          docker build --no-cache "${DIR}/" \
-            --build-arg "ARCH=${ARCH}" \
-            --tag       "lnd:${{matrix.arch}}"
-
       - name: Build lnd
-        if: env.DIR != 0.5 && env.DIR != 0.6
-        env:
-          DOCKER_BUILDKIT: 1
         run: >
           docker build --no-cache "${DIR}/"
-          --build-arg "goarch=${{matrix.arch}}"
+          --build-arg "ARCH=${ARCH}"
           --label     arch="${{matrix.arch}}"
           --label     commit="${{github.sha}}"
           --label     git-tag="${TAG}"

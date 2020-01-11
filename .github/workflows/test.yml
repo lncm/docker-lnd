@@ -45,12 +45,7 @@ jobs:
 
           cd ..
 
-      - name: Set target platform
-        if: matrix.arch != 'amd64' && matrix.ver != 0.5 && matrix.ver != 0.6 && matrix.ver != 0.7
-        run: ./scripts/ci-set-target-image-architecture.sh  "${{matrix.arch}}"  "${{matrix.ver}}/Dockerfile"
-
-      - name: Build lnd (legacy)
-        if: matrix.ver != 0.8
+      - name: Build lnd
         run: |
           ARCH=${{matrix.arch}}
           if [[ "${ARCH}" == "arm64" ]]; then
@@ -60,13 +55,6 @@ jobs:
           docker build --no-cache "${{matrix.ver}}/" \
             --build-arg "ARCH=${ARCH}" \
             --tag       "lnd:${{matrix.ver}}-${{matrix.arch}}"
-
-      - name: Build lnd
-        if: matrix.ver == 0.8
-        run: >
-          docker build --no-cache "${{matrix.ver}}/"
-          --build-arg "goarch=${{matrix.arch}}"
-          --tag       "lnd:${{matrix.ver}}-${{matrix.arch}}"
 
       - name: Show built image details
         run: docker images lnd
