@@ -1,22 +1,17 @@
 diff --git Dockerfile Dockerfile
-index b475f7f..8c2424d 100644
+index 3ca30a1..aae0ffd 100644
 --- Dockerfile
 +++ Dockerfile
-@@ -46,12 +46,9 @@ RUN go mod tidy
+@@ -23,7 +23,7 @@ ARG TAGS_LND="signrpc chainrpc"
+ ARG TAGS_STATIC="osusergo netgo static_build"
  
- RUN git diff go.mod go.sum
- 
--
--ENV BUILDFILE_HASH=6be7e0d0e6599301e88ee07c2299d6d4bcdd50f2072986bb535eeec1625e7964
- COPY ./build.sh .
- 
--# Verify that the build file is what's expected
--RUN echo "${BUILDFILE_HASH}  build.sh" | sha256sum -c
-+# NOTE: No hash-verification of `./build.sh` for variants yet
+ # Added by yours truly (@lncm)
+-ARG TAGS_EXTRA=""
++ARG TAGS_EXTRA="monitoring"
  
  
  
-@@ -160,5 +157,11 @@ VOLUME /root/.lnd
+@@ -273,5 +273,11 @@ VOLUME /root/.lnd
  # Expose lnd ports (rest, p2p, watchtower, rpc respectively).
  EXPOSE 8080 9735 9911 10009
  
@@ -28,17 +23,3 @@ index b475f7f..8c2424d 100644
 +
 +# Okay to hardcode them here, as it's in a variant that specifically wants Prometheus
 +CMD ["--prometheus.enable", "--prometheus.listen=0.0.0.0:8989"]
-diff --git build.sh build.sh
-index a872200..8da3109 100755
---- build.sh
-+++ build.sh
-@@ -32,6 +32,9 @@ TAGS="autopilotrpc invoicesrpc walletrpc routerrpc watchtowerrpc"
- #   ctx: https://github.com/golang/go/issues/26492
- TAGS="${TAGS} osusergo netgo static_build"
- 
-+# Added by yours truly (@lncm) to enable monitoring
-+TAGS="${TAGS} monitoring"
-+
- 
- build() {
-   binary_name=$1

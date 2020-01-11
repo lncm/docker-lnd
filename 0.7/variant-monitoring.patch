@@ -1,5 +1,5 @@
 diff --git Dockerfile Dockerfile
-index 25c008f..5caf0b2 100644
+index 25c008f..b3eea0d 100644
 --- Dockerfile
 +++ Dockerfile
 @@ -23,7 +23,7 @@ ARG TAGS_LND="signrpc chainrpc"
@@ -11,15 +11,13 @@ index 25c008f..5caf0b2 100644
  
  
  
-@@ -272,8 +272,11 @@ COPY  --from=cross-check /bin/lncli  /bin/
- # Define a root volume for data persistence.
- VOLUME /root/.lnd
+@@ -275,5 +275,11 @@ VOLUME /root/.lnd
+ # Expose lnd ports (rest, p2p, rpc respectively).
+ EXPOSE  8080  9735  10009
  
--# Expose lnd ports (rest, p2p, rpc respectively).
--EXPOSE  8080  9735  10009
-+# Expose lnd ports (rest, monitoring, p2p, rpc respectively).
-+EXPOSE  8080  8989  9735  10009
- 
++# Expose monitoring/Prometheus port
++EXPOSE 8989
++
  # Specify the start command and entrypoint as the lnd daemon.
  ENTRYPOINT ["lnd"]
 +
