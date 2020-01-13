@@ -1,5 +1,10 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+#
+## Given version (and optional variant), this script creates & pushes a relevant git-tag.
+#
 
 # required version
 VERSION=$1
