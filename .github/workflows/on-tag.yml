@@ -170,8 +170,11 @@ jobs:
       - name: Setup environment
         run: |
           echo ::set-env name=DOCKER_USER::"${GITHUB_ACTOR,,}"
-          echo ::set-env name=SLUG::"$(echo ${GITHUB_REPOSITORY,,} | sed 's/docker-//')"
-          echo ::set-env name=APP::"$(echo "${SLUG}" | awk -F/ '{print $NF}' )"
+
+          SLUG="$(echo ${GITHUB_REPOSITORY,,} | sed 's/docker-//')"
+          echo ::set-env name=SLUG::"${SLUG}"
+
+          echo ::set-env name=APP::"$(echo "${SLUG}" | awk -F/ '{print $NF}')"
 
           TAG="$(echo "${GITHUB_REF}" | grep 'refs/tags/' | awk -F/ '{print $NF}')"
           echo ::set-env name=TAG::"${TAG}"
