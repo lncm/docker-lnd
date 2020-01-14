@@ -2,13 +2,16 @@ name: Build & deploy tag
 
 on:
   push:
-    tags:
-      - '*'
+    tags: [ '*' ]
 
 jobs:
   build:
     name: Build lnd
     runs-on: ubuntu-18.04
+
+    env:
+      DOCKER_BUILDKIT: 1
+
     strategy:
       matrix:
         arch:
@@ -20,17 +23,15 @@ jobs:
     steps:
       - uses: actions/checkout@v1.0.0
 
-      # Extract the tag, amd verify it was a git-tag push
+      # Extract the tag, and verify it was a git-tag push
       #   NOTE: ${TAG} ~= vX.Y.Z[-<variant>][+build<N>]
       - name: Set TAG (env var)
         run: |
           TAG="$(echo "${GITHUB_REF}" | grep 'refs/tags/' | awk -F/ '{print $NF}')"
           if [[ -z "${TAG}" ]]; then
-            echo "This action has to be run by a git-tag push"
+            echo "This action has to be run on a git-tag push"
             exit 1
           fi
-
-          echo ::debug::"${TAG}"
           echo ::set-env name=TAG::"${TAG}"
 
       # Create $ARCH in form that can be used in Dockerfile as `FROM ${ARCH}/alpine`
@@ -40,25 +41,15 @@ jobs:
           if [[ "${ARCH}" == "arm64" ]]; then
             ARCH="arm64v8"
           fi
-
-          echo ::debug::"${ARCH}"
           echo ::set-env name=ARCH::"${ARCH}"
 
       - name: Set DIR (env var)
-        run: |
-          DIR="$(echo "${TAG}" | tr -d v | cut -d. -f-2)"
-
-          echo ::debug::"${DIR}"
-          echo ::set-env name=DIR::"${DIR}"
+        run: echo ::set-env name=DIR::"$(echo "${TAG}" | tr -d v | cut -d. -f-2)"
 
       # Extract optional variant to be built
       #   NOTE: `-` prepended to TAG helps to deal with `cut` ignoring `-f` when no matches for `-d` are found.
       - name: Set VARIANT (env var)
-        run: |
-          VARIANT="$(echo "-${TAG}" | cut -d- -f3- | cut -d+ -f1)"
-
-          echo ::debug::"${VARIANT}"
-          echo ::set-env name=VARIANT::"${VARIANT}"
+        run: echo ::set-env name=VARIANT::"$(echo "-${TAG}" | cut -d- -f3- | cut -d+ -f1)"
 
       - name: Print just set ENV VARs
         run: |
@@ -129,6 +120,9 @@ jobs:
     runs-on: ubuntu-18.04
     needs: build
 
+    env:
+      QEMU_VERSION: v4.2.0
+
     steps:
       - name: Download build artifact
         uses: actions/download-artifact@v1.0.0
@@ -139,7 +133,7 @@ jobs:
         run: sha256sum docker-images/*
 
       - name: Register self-compiled qemu
-        run: docker run --rm --privileged "meedamian/simple-qemu:v4.1.0" -p yes
+        run: docker run --rm --privileged "meedamian/simple-qemu:${QEMU_VERSION}" -p yes
 
       - name: Load all images locally
         run: ls -d docker-images/* | xargs -I %  docker load -i "%"
@@ -177,11 +171,12 @@ jobs:
         run: |
           echo ::set-env name=DOCKER_USER::"${GITHUB_ACTOR,,}"
           echo ::set-env name=SLUG::"$(echo ${GITHUB_REPOSITORY,,} | sed 's/docker-//')"
+          echo ::set-env name=NAME::"$(echo "${SLUG}" | awk -F/ '{print $NF}' )"
 
           TAG="$(echo "${GITHUB_REF}" | grep 'refs/tags/' | awk -F/ '{print $NF}')"
+          echo ::set-env name=TAG::"${TAG}"
 
-          VERSION="$(echo "${TAG}" | cut -d+ -f1)"
-          echo ::set-env name=VERSION::"${VERSION}"
+          echo ::set-env name=VERSION::"$(echo "${TAG}" | cut -d+ -f1)"
 
           BUILD="$(echo "+${TAG}" | cut -d+ -f3)"
           if [[ -z "${BUILD}" ]]; then
@@ -198,40 +193,39 @@ jobs:
           printf "VERSION: %s\n"  "${VERSION}"
           printf "  BUILD: %s\n"  "${BUILD}"
 
-      - name: Enable manifests
+      - name: Enable manifests & print Docker version
         run: |
           mkdir -p ~/.docker
-
           echo '{ "experimental": "enabled" }' > ~/.docker/config.json
           sudo systemctl restart docker
           docker version
-
-      - name: Login to Docker Hub
-        run: |
-          echo "Logging in as ${DOCKER_USER}…"
-          echo "${{secrets.DOCKER_TOKEN}}" | docker login -u="${DOCKER_USER}" --password-stdin
 
       - name: Download images built in build job
         uses: actions/download-artifact@v1.0.0
         with:
           name: docker-images
 
-      - name: Print sha256sum of all Docker images
+      - name: Print sha256sum of downloaded images
         run: sha256sum docker-images/*
 
-      - name: Load all images locally
+      - name: Load images locally
         run: ls -d docker-images/* | xargs -I %  docker load -i "%"
 
       # No short tags.  lnd releases are quite chaotic, it's better to no provide convenience that can easily backfire.
       - name: Version-tag all images
         run: |
-          for arch in $(docker images lnd --format "{{.Tag}}"); do
-            docker tag  "lnd:${arch}"  "${SLUG}:${VERSION}-${arch}-${BUILD}"
-            docker tag  "lnd:${arch}"  "${SLUG}:${VERSION}-${arch}"
+          for arch in $(docker images ${NAME} --format "{{.Tag}}"); do
+            docker tag  "${NAME}:${arch}"  "${SLUG}:${VERSION}-${arch}-${BUILD}"
+            docker tag  "${NAME}:${arch}"  "${SLUG}:${VERSION}-${arch}"
           done
 
       - name: List all tagged images
         run: docker images "${SLUG}"
+
+      - name: Login to Docker Hub
+        run: |
+          echo "Logging in as ${DOCKER_USER}…"
+          echo "${{secrets.DOCKER_TOKEN}}" | docker login -u="${DOCKER_USER}" --password-stdin
 
       - name: Push all images
         run: docker images "${SLUG}" --format "{{.Repository}}:{{.Tag}}" | xargs -I %  docker push %
@@ -245,13 +239,13 @@ jobs:
             "${SLUG}:${VERSION}-arm32v7"
 
       - name: Annotate arm32v6
-        run: docker manifest annotate "${SLUG}:${VERSION}" "${SLUG}:${VERSION}-arm32v6" --os linux --arch arm   --variant v6
+        run: docker manifest annotate "${SLUG}:${VERSION}" "${SLUG}:${VERSION}-arm32v6"  --os linux  --arch arm  --variant v6
 
       - name: Annotate arm32v7
-        run: docker manifest annotate "${SLUG}:${VERSION}" "${SLUG}:${VERSION}-arm32v7" --os linux --arch arm   --variant v7
+        run: docker manifest annotate "${SLUG}:${VERSION}" "${SLUG}:${VERSION}-arm32v7"  --os linux  --arch arm  --variant v7
 
       - name: Annotate arm64v8
-        run: docker manifest annotate "${SLUG}:${VERSION}" "${SLUG}:${VERSION}-arm64"   --os linux --arch arm64 --variant v8
+        run: docker manifest annotate "${SLUG}:${VERSION}" "${SLUG}:${VERSION}-arm64"   --os linux  --arch arm64  --variant v8
 
       - name: Print manifest's details
         run: docker manifest inspect "${SLUG}:${VERSION}" | jq '.'
@@ -259,7 +253,7 @@ jobs:
       - name: Push manifest
         run: docker manifest push "${SLUG}:${VERSION}"
 
-# Commented out due to changes in Docker Hub API, making it impossible to do it programmatically as of right now :(.
+      # TODO: broken; see: https://github.com/docker/hub-feedback/issues/1927
 #      - name: Sync README.md and Description to Docker Hub
 #        uses: meeDamian/sync-readme@v1.0.5
 #        with:
@@ -267,12 +261,27 @@ jobs:
 #          slug: ${{env.SLUG}}
 #          description: true
 
-      - name: Download binaries from prev job
+
+  github-release:
+    name: Create Github Release. Only after successful build of a pushed git tag
+    runs-on: ubuntu-18.04
+    needs: build
+    steps:
+      - name: Download binaries from build artifacts
         uses: actions/download-artifact@v1.0.0
         with:
           name: binaries
 
-      - name: Upload all artifact to Github Release
+      - name: Download Docker images from build artifacts
+        uses: actions/download-artifact@v1.0.0
+        with:
+          name: docker-images
+
+      - name: Print checksums of binaries
+        run: sha256sum  binaries/*  docker-images/*
+
+      # TODO: change to official way
+      - name: Upload binaries to Github Release
         uses: meeDamian/github-release@v1.0.1
         with:
           token: ${{secrets.GITHUB_TOKEN}}

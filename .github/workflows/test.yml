@@ -98,6 +98,9 @@ jobs:
     runs-on: ubuntu-18.04
     needs: build
 
+    env:
+      QEMU_VERSION: v4.2.0
+
     steps:
       - name: Download build artifact
         uses: actions/download-artifact@v1.0.0
@@ -108,7 +111,7 @@ jobs:
         run: sha256sum docker-images/*
 
       - name: Register self-compiled qemu
-        run: docker run --rm --privileged "meedamian/simple-qemu:v4.1.0" -p yes
+        run: docker run --rm --privileged "meedamian/simple-qemu:${QEMU_VERSION}" -p yes
 
       - name: Load all images locally
         run: ls -d docker-images/* | xargs -I %  docker load -i "%"
