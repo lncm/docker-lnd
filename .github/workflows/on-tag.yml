@@ -51,6 +51,15 @@ jobs:
       - name: Set VARIANT (env var)
         run: echo ::set-env name=VARIANT::"$(echo "-${TAG}" | cut -d- -f3- | cut -d+ -f1)"
 
+      - name: Set BUILD (env var)
+        run: |
+          BUILD="$(echo "+${TAG}" | cut -d+ -f3)"
+          if [[ -z "${BUILD}" ]]; then
+            echo "ERR '+build<N>' must be appended to the git tag"
+            exit 1
+          fi
+          echo ::set-env name=BUILD::"${BUILD}"
+
       - name: Print just set ENV VARs
         run: |
           printf "Git tag & arch processed:\n"
@@ -58,6 +67,7 @@ jobs:
           printf "    TAG: %s\n"            "${TAG}"
           printf "VARIANT: %s\n"            "${VARIANT}"
           printf "    DIR: %s\n"            "${DIR}"
+          printf "  BUILD: %s\n"            "${BUILD}"
 
       - name: Apply variant patch (if any)
         if: env.VARIANT != ''
@@ -180,13 +190,7 @@ jobs:
           echo ::set-env name=TAG::"${TAG}"
 
           echo ::set-env name=VERSION::"$(echo "${TAG}" | cut -d+ -f1)"
-
-          BUILD="$(echo "+${TAG}" | cut -d+ -f3)"
-          if [[ -z "${BUILD}" ]]; then
-            echo "ERR '+build<N>' must be appended to the git tag"
-            exit 1
-          fi
-          echo ::set-env name=BUILD::"${BUILD}"
+          echo ::set-env name=BUILD::"$(echo "+${TAG}" | cut -d+ -f3)"
 
       - name: Print just set ENV VARs
         run: |
