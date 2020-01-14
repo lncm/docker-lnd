@@ -171,7 +171,7 @@ jobs:
         run: |
           echo ::set-env name=DOCKER_USER::"${GITHUB_ACTOR,,}"
           echo ::set-env name=SLUG::"$(echo ${GITHUB_REPOSITORY,,} | sed 's/docker-//')"
-          echo ::set-env name=NAME::"$(echo "${SLUG}" | awk -F/ '{print $NF}' )"
+          echo ::set-env name=APP::"$(echo "${SLUG}" | awk -F/ '{print $NF}' )"
 
           TAG="$(echo "${GITHUB_REF}" | grep 'refs/tags/' | awk -F/ '{print $NF}')"
           echo ::set-env name=TAG::"${TAG}"
@@ -190,6 +190,7 @@ jobs:
           printf "Just set env vars:\n"
           printf "    TAG: %s\n"  "${TAG}"
           printf "   SLUG: %s\n"  "${SLUG}"
+          printf "    APP: %s\n"  "${APP}"
           printf "VERSION: %s\n"  "${VERSION}"
           printf "  BUILD: %s\n"  "${BUILD}"
 
@@ -214,9 +215,9 @@ jobs:
       # No short tags.  lnd releases are quite chaotic, it's better to no provide convenience that can easily backfire.
       - name: Version-tag all images
         run: |
-          for arch in $(docker images ${NAME} --format "{{.Tag}}"); do
-            docker tag  "${NAME}:${arch}"  "${SLUG}:${VERSION}-${arch}-${BUILD}"
-            docker tag  "${NAME}:${arch}"  "${SLUG}:${VERSION}-${arch}"
+          for arch in $(docker images ${APP} --format "{{.Tag}}"); do
+            docker tag  "${APP}:${arch}"  "${SLUG}:${VERSION}-${arch}-${BUILD}"
+            docker tag  "${APP}:${arch}"  "${SLUG}:${VERSION}-${arch}"
           done
 
       - name: List all tagged images
