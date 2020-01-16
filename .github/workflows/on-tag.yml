@@ -1,4 +1,4 @@
-name: Build & deploy tag
+name: Build & deploy on git tag push
 
 on:
   push:
@@ -9,9 +9,6 @@ jobs:
     name: Build lnd
     runs-on: ubuntu-18.04
 
-    env:
-      DOCKER_BUILDKIT: 1
-
     strategy:
       matrix:
         arch:
@@ -19,6 +16,10 @@ jobs:
           - arm64
           - arm32v6
           - arm32v7
+
+    env:
+      DOCKER_BUILDKIT: 1
+      APP: lnd
 
     steps:
       - uses: actions/checkout@v1.0.0
@@ -46,6 +47,11 @@ jobs:
           fi
           echo ::set-env name=ARCH::"${ARCH}"
 
+      ## Set ${VERSION} of the binary being built, extract it from the pushed git-tag
+      #   fmt:  vX.Y.Z
+      - name: Set VERSION (env var)
+        run: echo ::set-env name=VERSION::"$(echo "${TAG}" | cut -d+ -f1)"
+
       ## Set ${DIR} for the minor-version.  Extract it from ${TAG}
       #   fmt: 0.X
       - name: Set DIR (env var)
@@ -68,14 +74,26 @@ jobs:
           fi
           echo ::set-env name=BUILD::"${BUILD}"
 
-      - name: Print just set ENV VARs
+      - name: Set GOARCH & GOARM (env vars)
+        if: matrix.arch != 'amd64'
+        run: |
+          GOARCH="$(echo "${{matrix.arch}}" | grep -oE 'arm(64)?')"
+          echo ::set-env name=GOARCH::"${GOARCH}"
+
+          GOARM="$(echo "${{matrix.arch}}" | grep arm32 | tail -c 2)"
+          echo ::set-env name=GOARM::"${GOARM}"
+
+      - name: Print ENV VARs set above
         run: |
           printf "Git tag & arch processed:\n"
           printf "   ARCH: %s (from %s)\n"  "${ARCH}" "${{matrix.arch}}"
           printf "    TAG: %s\n"            "${TAG}"
+          printf "VERSION: %s\n"            "${VERSION}"
           printf "VARIANT: %s\n"            "${VARIANT}"
           printf "    DIR: %s\n"            "${DIR}"
           printf "  BUILD: %s\n"            "${BUILD}"
+          printf " GOARCH: %s\n"            "${GOARCH}"
+          printf "  GOARM: %s\n"            "${GOARM}"
 
       - name: Apply variant patch (if any)
         if: env.VARIANT != ''
@@ -85,21 +103,24 @@ jobs:
         run: >
           docker build --no-cache "${DIR}/"
           --build-arg "ARCH=${ARCH}"
+          --build-arg "GOARCH=${GOARCH}"
+          --build-arg "GOARM=${GOARM}"
+          --build-arg "VERSION=${VERSION}"
           --label     arch="${{matrix.arch}}"
           --label     commit="${{github.sha}}"
           --label     git-tag="${TAG}"
           --label     guilty="${{github.actor}}"
           --label     repo-url="${{github.repositoryUrl}}"
           --label     variant="${VARIANT}"
-          --tag       "lnd:${{matrix.arch}}"
+          --tag       "${APP}:${{matrix.arch}}"
 
       - name: Show built image details
-        run: docker images lnd
+        run: docker images "${APP}"
 
       - name: Save image to a .tgz file
         run: |
           mkdir -p image/
-          docker save "lnd:${{matrix.arch}}" | gzip > "image/docker-lnd-${TAG}-${{matrix.arch}}.tgz"
+          docker save "${APP}:${{matrix.arch}}" | gzip > "image/docker-${APP}-${TAG}-${{matrix.arch}}.tgz"
 
       - name: Print sha256sum of produced Docker image
         run: sha256sum image/*
@@ -113,9 +134,9 @@ jobs:
       - name: Extract binaries from the built image
         run: |
           mkdir -p binaries/
-          ID=$(docker create "lnd:${{matrix.arch}}")
-          docker cp  "${ID}:/bin/lnd"    binaries/
-          docker cp  "${ID}:/bin/lncli"  binaries/
+          ID=$(docker create "${APP}:${{matrix.arch}}")
+          docker cp  "${ID}:/bin/${APP}"  binaries/
+          docker cp  "${ID}:/bin/lncli"   binaries/
           docker rm  "${ID}"
 
           for f in binaries/*; do
@@ -139,6 +160,7 @@ jobs:
 
     env:
       QEMU_VERSION: v4.2.0
+      APP: lnd
 
     steps:
       - name: Download build artifact
@@ -156,28 +178,28 @@ jobs:
         run: ls -d docker-images/* | xargs -I %  docker load -i "%"
 
       - name: List all tagged images
-        run: docker images lnd
+        run: docker images "${APP}"
 
       - name: Run sanity checks
         run: |
-          for tag in $(docker images lnd --format "{{.Tag}}"); do
+          for tag in $(docker images "${APP}" --format "{{.Tag}}"); do
             echo
-            echo "~~~~~ lnd:${tag} ~~~~~"
-            docker inspect "lnd:${tag}" | jq '.'
+            echo "~~~~~ ${APP}:${tag} ~~~~~"
+            docker inspect "${APP}:${tag}" | jq '.'
 
-            docker run --rm                         "lnd:${tag}" --version
-            docker run --rm --entrypoint=lncli      "lnd:${tag}" --version
+            docker run --rm                         "${APP}:${tag}" --version
+            docker run --rm --entrypoint=lncli      "${APP}:${tag}" --version
 
-            docker run --rm --entrypoint=uname      "lnd:${tag}" -a
-            docker run --rm --entrypoint=cat        "lnd:${tag}" /etc/os-release
-            docker run --rm --entrypoint=sha256sum  "lnd:${tag}" /bin/lnd /bin/lncli
+            docker run --rm --entrypoint=uname      "${APP}:${tag}" -a
+            docker run --rm --entrypoint=cat        "${APP}:${tag}" /etc/os-release
+            docker run --rm --entrypoint=sha256sum  "${APP}:${tag}" /bin/lnd /bin/lncli
 
-            docker run --rm --entrypoint=sh         "lnd:${tag}" -c 'apk add --no-cache file && file /bin/lnd /bin/lncli'
+            docker run --rm --entrypoint=sh -u=root "${APP}:${tag}" -c "apk add --no-cache file && file /bin/${APP} /bin/lncli"
           done
 
 
   docker-hub:
-    name: Tag & deploy to Docker Hub.  Only after successful build & test.
+    name: Tag & deploy to Docker Hub.  Only after successful build & test
 
     runs-on: ubuntu-18.04
     needs: test
@@ -202,6 +224,7 @@ jobs:
       - name: Print just set ENV VARs
         run: |
           printf "Just set env vars:\n"
+          printf "   USER: %s\n"  "${DOCKER_USER}"
           printf "    TAG: %s\n"  "${TAG}"
           printf "   SLUG: %s\n"  "${SLUG}"
           printf "    APP: %s\n"  "${APP}"
@@ -229,7 +252,7 @@ jobs:
       # No short tags.  lnd releases are quite chaotic, it's better to no provide convenience that can easily backfire.
       - name: Version-tag all images
         run: |
-          for arch in $(docker images ${APP} --format "{{.Tag}}"); do
+          for arch in $(docker images "${APP}" --format "{{.Tag}}"); do
             docker tag  "${APP}:${arch}"  "${SLUG}:${VERSION}-${arch}-${BUILD}"
             docker tag  "${APP}:${arch}"  "${SLUG}:${VERSION}-${arch}"
           done
