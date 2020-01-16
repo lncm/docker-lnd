@@ -47,11 +47,6 @@ jobs:
           fi
           echo ::set-env name=ARCH::"${ARCH}"
 
-      ## Set ${VERSION} of the binary being built, extract it from the pushed git-tag
-      #   fmt:  vX.Y.Z
-      - name: Set VERSION (env var)
-        run: echo ::set-env name=VERSION::"$(echo "${TAG}" | cut -d+ -f1)"
-
       ## Set ${DIR} for the minor-version.  Extract it from ${TAG}
       #   fmt: 0.X
       - name: Set DIR (env var)
@@ -88,7 +83,6 @@ jobs:
           printf "Git tag & arch processed:\n"
           printf "   ARCH: %s (from %s)\n"  "${ARCH}" "${{matrix.arch}}"
           printf "    TAG: %s\n"            "${TAG}"
-          printf "VERSION: %s\n"            "${VERSION}"
           printf "VARIANT: %s\n"            "${VARIANT}"
           printf "    DIR: %s\n"            "${DIR}"
           printf "  BUILD: %s\n"            "${BUILD}"
@@ -105,7 +99,6 @@ jobs:
           --build-arg "ARCH=${ARCH}"
           --build-arg "GOARCH=${GOARCH}"
           --build-arg "GOARM=${GOARM}"
-          --build-arg "VERSION=${VERSION}"
           --label     arch="${{matrix.arch}}"
           --label     commit="${{github.sha}}"
           --label     git-tag="${TAG}"
