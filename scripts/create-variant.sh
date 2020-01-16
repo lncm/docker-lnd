@@ -34,7 +34,7 @@ main() {
 
   # If variant with same name exists, ask for confirmation before overriding
   if git ls-files --error-unmatch "${dir}/${patchfile}" &>/dev/null; then
-    read -p "This variant already exists (will be lost, if it wasn't applied).  Override?  [yn]" -n 1 -r
+    read -p "This variant already exists (will be lost, if it wasn't applied).  Override?  [yn] " -n 1 -r
     if [[ ! "${REPLY}" =~ ^[Yy]$ ]]; then
         printf >&2 "./%s: Aborting w/o applying any changes\n" "${SCRIPT_NAME}" && exit 1
     fi
