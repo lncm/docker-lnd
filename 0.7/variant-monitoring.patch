@@ -1,24 +1,24 @@
 diff --git Dockerfile Dockerfile
-index 25c008f..b3eea0d 100644
+index ed9f858..485e8b5 100644
 --- Dockerfile
 +++ Dockerfile
-@@ -23,7 +23,7 @@ ARG TAGS_LND="signrpc chainrpc"
+@@ -26,7 +26,7 @@ ARG TAGS_LND="signrpc chainrpc"
  ARG TAGS_STATIC="osusergo netgo static_build"
  
  # Added by yours truly (@lncm)
 -ARG TAGS_EXTRA="wtclientrpc"
 +ARG TAGS_EXTRA="wtclientrpc monitoring"
  
- 
- 
-@@ -275,5 +275,11 @@ VOLUME /root/.lnd
- # Expose lnd ports (rest, p2p, rpc respectively).
+ # Force Go to use the cgo based DNS resolver. This is required to ensure DNS
+ #   queries required to connect to linked containers succeed
+@@ -252,5 +252,11 @@ VOLUME /root/.lnd
+ # Expose lnd ports (rest, p2p, rpc respectively)
  EXPOSE  8080  9735  10009
  
 +# Expose monitoring/Prometheus port
 +EXPOSE 8989
 +
- # Specify the start command and entrypoint as the lnd daemon.
+ # Specify the start command and entrypoint as the lnd daemon
  ENTRYPOINT ["lnd"]
 +
 +# Okay to hardcode them here, as it's in a variant that specifically wants Prometheus
