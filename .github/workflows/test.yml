@@ -33,8 +33,9 @@ jobs:
     steps:
       - uses: actions/checkout@v1.0.0
 
-      - name: Verify all patches apply cleanly
-        run: ./scripts/verify-patches.sh "${{matrix.ver}}"
+# TODO: temporarily disable
+#      - name: Verify all patches apply cleanly
+#        run: ./scripts/verify-patches.sh "${{matrix.ver}}"
 
       - name: Setup environment
         if: matrix.arch != 'amd64'
