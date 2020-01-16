@@ -1,20 +1,23 @@
+# This Dockerfile build lnd v0.9.x twice: once on Alpine, once on Debian
+# If the binaries are the same, one is compressed, and copied to the `final` stage
+
 # lnd version to be build
 ARG VERSION=v0.9.0-beta-rc1
 
-# Target CPU archtecture of built IPFS binary
-ARG ARCH=amd64
+# Target CPU archtecture of built lnd binary
+ARG ARCH
 
 # Define default versions so that they don't have to be repreated throughout the file
 ARG VER_GO=1.13
 ARG VER_ALPINE=3.11
 
 #
-## The below ARGs are here just to avoid repetition, these are (probably) not user-changeable
+## NOTE: You should only override the ARGs below, if you know what you're doing
 #
 ARG PKG=github.com/lightningnetwork/lnd
 
 # original content
-#   src: https://github.com/lightningnetwork/lnd/blob/v0.9.0-beta-rc1/build/release/release.sh#L133-L134
+#   src: https://github.com/lightningnetwork/lnd/blob/v0.9.0-beta-rc2/build/release/release.sh#L133-L134
 ARG TAGS_BASE="autopilotrpc invoicesrpc walletrpc routerrpc watchtowerrpc"
 ARG TAGS_LND="signrpc chainrpc"
 
@@ -25,80 +28,13 @@ ARG TAGS_STATIC="osusergo netgo static_build"
 # Added by yours truly (@lncm)
 ARG TAGS_EXTRA=""
 
-
-
-#
-## The pairs of Docker stages below define Go Environment necessary for cross-compilation on
-#   two different base images: Alpine, and Debian.  Later build stages can be started as:
-#
-#   `FROM ${ARCH}-debian`  or
-#   `FROM ${ARCH}-alpine`
-#
-## Stage defining Alpine environment
-FROM golang:${VER_GO}-alpine${VER_ALPINE} AS alpine-base
-
-ARG TAGS_BASE
-ARG TAGS_STATIC
-ARG TAGS_EXTRA
-
-ENV TAGS="${TAGS_BASE} ${TAGS_STATIC} ${TAGS_EXTRA}"
-
-ENV GOOS=linux
-
 # Force Go to use the cgo based DNS resolver. This is required to ensure DNS
-#   queries required to connect to linked containers succeed.
-ENV GODEBUG netdns=cgo
-
-
-
-## Stage defining Debian environment
-FROM golang:${VER_GO}-buster AS debian-base
-
-ARG TAGS_BASE
-ARG TAGS_STATIC
-ARG TAGS_EXTRA
-
-ENV TAGS="${TAGS_BASE} ${TAGS_STATIC} ${TAGS_EXTRA}"
-
-ENV GOOS=linux
-
-# Force Go to use the cgo based DNS resolver. This is required to ensure DNS
-#   queries required to connect to linked containers succeed.
-ENV GODEBUG netdns=cgo
-
-
-
-FROM alpine-base AS amd64-alpine
-ENV GOARCH=amd64
-
-FROM debian-base AS amd64-debian
-ENV GOARCH=amd64
-
-
-FROM alpine-base AS arm64v8-alpine
-ENV GOARCH=arm64
-
-FROM debian-base AS arm64v8-debian
-ENV GOARCH=arm64
-
-
-FROM alpine-base AS arm32v7-alpine
-ENV GOARCH=arm  GOARM=7
-
-FROM debian-base AS arm32v7-debian
-ENV GOARCH=arm  GOARM=7
-
-
-FROM alpine-base AS arm32v6-alpine
-ENV GOARCH=arm  GOARM=6
-
-FROM debian-base AS arm32v6-debian
-ENV GOARCH=arm  GOARM=6
-
+#   queries required to connect to linked containers succeed
+ARG GODEBUG="netdns=cgo"
 
 
 #
-## This stage fetches, and verifies the source code, as well as applies necessary fixes
+## This stage fetches and verifies source code, and applies necessary fixes
 #
 FROM golang:${VER_GO}-alpine${VER_ALPINE} AS preparer
 
@@ -114,26 +50,25 @@ ENV KEYS 4AB7F8DA6FAEBB3B70B1F903BC13F65E2DC84465 C49CD91BF681FDAD9AE79BBEA61B9D
 #   This command doesn't stop the flow on error, and
 #   Key verification happens in the next step
 RUN wget -qO- "https://keybase.io/${KEYBASE_USER}/pgp_keys.asc" | gpg --import && \
-    for SRV in keyserver.ubuntu.com  hkp://p80.pool.sks-keyservers.net:80  ha.pool.sks-keyservers.net  keyserver.pgp.com  pgp.mit.edu; do \
-        timeout 9s  gpg  --keyserver "${SRV}"  --recv-key ${KEYS}  >/dev/null 2<&1 && \
-            { echo "OK:  ${SRV}" && exit 0; } || \
-            { echo "ERR: ${SRV} fail=$?"; } ; \
+    for srv in  keyserver.ubuntu.com  hkp://p80.pool.sks-keyservers.net:80  ha.pool.sks-keyservers.net  keyserver.pgp.com  pgp.mit.edu; do \
+        timeout 9s  gpg  --keyserver "${srv}"  --recv-key ${KEYS}  >/dev/null 2<&1 && \
+            { echo "OK:  ${srv}" && exit 0; } || \
+            { echo "ERR: ${srv} fail=$?"; } ; \
     done
 
 RUN gpg --list-keys && \
-    gpg --list-key ${KEY}
+    gpg --list-keys ${KEYS}
 
 RUN mkdir -p /go/src/
 
-ENV DIR /go/src/lnd/
-
 # Fetch lnd source code
 RUN cd /go/src/ && \
-    git clone  -b "${VERSION}"  --depth=1  https://github.com/lightningnetwork/lnd
+    git clone  -b "${VERSION}"  --depth=1  https://github.com/lightningnetwork/lnd .
 
-WORKDIR /go/src/lnd/
+WORKDIR /go/src/
 
-# NOTE: The fallback condition is a hack around @Roasbeef's "key hygiene".  A manual attempt at accepting expired keys
+## Verify that git tag contains a valid signature
+#   NOTE: The fallback condition is a hack around @Roasbeef's "key hygiene".  A manual attempt at accepting expired keys
 #       through git verify-tag; What can possibly go wrong? 😅
 #       More: https://github.com/lightningnetwork/lnd/issues/3507#issuecomment-532414524
 RUN git verify-tag "${VERSION}" || \
@@ -152,35 +87,68 @@ RUN git diff
 #
 ## This stage builds `lnd` & `lncli` in Alpine environment
 #
-FROM ${ARCH}-alpine AS alpine-builder
+FROM golang:${VER_GO}-alpine${VER_ALPINE} AS alpine-builder
 
+# Provided by Docker by default
+ARG TARGETVARIANT
+
+# These two should only be set for cross-compilation
+ARG GOARCH
+ARG GOARM
+
+# Capture ARGs defined globally
 ARG PKG
+ARG TAGS_BASE
 ARG TAGS_LND
+ARG TAGS_STATIC
+ARG TAGS_EXTRA
+ARG GODEBUG
 
-RUN apk add --no-cache  libc-dev  git  gcc
+# Aggregate all tags together
+ENV TAGS="${TAGS_BASE} ${TAGS_STATIC} ${TAGS_EXTRA}"
+
+# Only set GOOS if GOARCH is set
+ENV GOOS ${GOARCH:+linux}
+
+# If GOARM is not set, but TARGETVARIANT is set - hardcode GOARM to 6
+ENV GOARM ${GOARM:-${TARGETVARIANT:+6}}
+
+ENV LDFLAGS "-s -w -buildid="
+
+RUN apk add --no-cache  musl-dev  git  gcc
 
 RUN mkdir -p /go/src/
 
 COPY  --from=preparer /go/src/  /go/src/
 
-WORKDIR /go/src/lnd/
+WORKDIR /go/src/
 
-RUN env && \
-    go version && \
-    go env
+RUN env && go version && go env
 
-# [smaller output binaries] Disable DWARF generation (-w), and symbol table (-s)
-# [binary version] Inject --version into the final binary (-X)
-RUN export LD="-w -s -X ${PKG}/build.Commit=$(git describe --abbrev=40)"; \
-    echo "Building with ldflags: '${LD}'" && \
-    go build -v  -trimpath  -mod=readonly \
-        -ldflags="${LD}"  -tags="${TAGS} ${TAGS_LND}" \
-        -o /go/bin/ \
-        "${PKG}/cmd/lnd" && \
-    go build -v  -trimpath  -mod=readonly \
-        -ldflags="${LD}"  -tags="${TAGS}" \
-        -o /go/bin/ \
-        "${PKG}/cmd/lncli"
+## Build lnd binaries
+#   The first line gets hash of the last git-commit & second one prints it.
+#   And here's all other flags explained:
+#       `-x` [verbocity++] print all executed commands
+#       `-v` [verbocity++] print names of compiled packages
+#       `-mod=readonly` [reproducibility] do not change versions of used packages no matter what
+#       `-trimpath` [reproducibility] make sure absolute paths are not included anywhere in the binary
+#       `-tags` [reproducibility] tell Go to build a static binary, see more: https://github.com/golang/go/issues/26492
+#       `-ldflags`
+#           `-s` [size--] do not include symbol table and debug info
+#           `-w` [size--] do not include DWARF symbol table
+#           `-buildid` [reproducibility] while this should always be the same in our setup, clear it just-in-case
+#           `-X` [info] is used to inject git-commit into the built binaries
+#
+#   NOTE: all of this has to happen in a single `RUN`, because it's impossible to set ENV var in Docker to
+#       an output of an expression
+RUN export GIT_TAG="$(git describe --abbrev=40)"; \
+    echo "Building git tag: ${GIT_TAG}"; \
+    go build  -x  -v  -trimpath  -mod=readonly  -tags="${TAGS} ${TAGS_LND}" \
+        -ldflags="${LDFLAGS} -X ${PKG}/build.Commit=${GIT_TAG}" \
+        -o /go/bin/  "${PKG}/cmd/lnd" && \
+    go build  -x  -v  -trimpath  -mod=readonly  -tags="${TAGS}" \
+        -ldflags="${LDFLAGS} -X ${PKG}/build.Commit=${GIT_TAG}" \
+        -o /go/bin/  "${PKG}/cmd/lncli"
 
 
 
@@ -188,38 +156,46 @@ RUN export LD="-w -s -X ${PKG}/build.Commit=$(git describe --abbrev=40)"; \
 ## This stage builds `lnd` & `lncli` in Debian environment
 #
 # NOTE: Comments that would be identical to Alpine stage skipped for brevity
-FROM ${ARCH}-debian AS debian-builder
+FROM golang:${VER_GO}-buster AS debian-builder
 
+ARG TARGETVARIANT
+ARG GOARCH
+ARG GOARM
 ARG PKG
+ARG TAGS_BASE
 ARG TAGS_LND
+ARG TAGS_STATIC
+ARG TAGS_EXTRA
+ARG GODEBUG
+
+ENV TAGS="${TAGS_BASE} ${TAGS_STATIC} ${TAGS_EXTRA}"
+ENV GOOS ${GOARCH:+linux}
+ENV GOARM ${GOARM:-${TARGETVARIANT:+6}}
+ENV LDFLAGS "-s -w -buildid="
 
 RUN apt-get update  &&  apt-get -y install  file  git
 
 RUN mkdir -p /go/src/
 
-COPY  --from=preparer /go/src/lnd/  /go/src/lnd/
+COPY  --from=preparer /go/src/  /go/src/
 
-WORKDIR /go/src/lnd/
+WORKDIR /go/src/
 
-RUN env && \
-    go version && \
-    go env
+RUN env && go version && go env
 
-RUN export LD="-w -s -X ${PKG}/build.Commit=$(git describe --abbrev=40)"; \
-    echo "Building with ldflags: '${LD}'" && \
-    go build -v  -trimpath  -mod=readonly \
-        -ldflags="${LD}"  -tags="${TAGS} ${TAGS_LND}" \
-        -o /go/bin/ \
-        "${PKG}/cmd/lnd" && \
-    go build -v  -trimpath  -mod=readonly \
-        -ldflags="${LD}"  -tags="${TAGS}" \
-        -o /go/bin/ \
-        "${PKG}/cmd/lncli"
+RUN export GIT_TAG="$(git describe --abbrev=40)"; \
+    echo "Building git tag: ${GIT_TAG}"; \
+    go build  -x  -v  -trimpath  -mod=readonly  -tags="${TAGS} ${TAGS_LND}" \
+        -ldflags="${LDFLAGS} -X ${PKG}/build.Commit=${GIT_TAG}" \
+        -o /go/bin/  "${PKG}/cmd/lnd" && \
+    go build  -x  -v  -trimpath  -mod=readonly  -tags="${TAGS}" \
+        -ldflags="${LDFLAGS} -X ${PKG}/build.Commit=${GIT_TAG}" \
+        -o /go/bin/  "${PKG}/cmd/lncli"
 
 
 
 #
-## This stage fetches built binaries from build stages, compares them, and if they're identical puts compressed binaries to `/bin/`
+## This stage compares previously built binaries, and only proceeds if they are identical
 #
 FROM alpine:${VER_ALPINE} AS cross-check
 
@@ -241,37 +217,38 @@ RUN du          /debian/*  /alpine/*
 RUN diff -q  /alpine/lnd   /debian/lnd \
  && diff -q  /alpine/lncli /debian/lncli
 
-# Compress binaries, and be verbose about it
-RUN upx -v  /alpine/lnd  /alpine/lncli
-
-# Print binary info AFTER compression
-RUN sha256sum   /alpine/*
-RUN file        /alpine/*
-RUN du          /alpine/*
-
-# If all are identical, proceed to move the binary into a more standard `/bin/`
+# If identical, proceed to move the binaries into `/bin/`
 RUN mv  /alpine/*  /bin/
+
+# Compress, and be verbose about it
+RUN upx -v /bin/lnd  /bin/lncli
+
+# Print binaries info PAST compression
+RUN sha256sum   /bin/lnd  /bin/lncli
+RUN file        /bin/lnd  /bin/lncli
+RUN du          /bin/lnd  /bin/lncli
 
 
 
 #
 ## This is the final image that gets shipped to Docker Hub
 #
-FROM ${ARCH}/alpine:${VER_ALPINE} AS final
+# NOTE: `${ARCH:+${ARCH}/}` - if ARCH is set, append `/` to it, leave it empty otherwise
+FROM ${ARCH:+${ARCH}/}alpine:${VER_ALPINE} AS final
 
 LABEL maintainer="Damian Mee (@meeDamian)"
 
-COPY --from=cross-check /etc/ssl/certs/ca-certificates.crt  /etc/ssl/certs/
+COPY  --from=cross-check /etc/ssl/certs/ca-certificates.crt  /etc/ssl/certs/
 
-# Copy binaries from the builder image.
+# Copy binaries from the cross-check stage
 COPY  --from=cross-check /bin/lnd    /bin/
 COPY  --from=cross-check /bin/lncli  /bin/
 
-# Define a root volume for data persistence.
+# Expose volume containing all `lnd` data
 VOLUME /root/.lnd
 
-# Expose lnd ports (rest, p2p, watchtower, rpc respectively).
-EXPOSE 8080 9735 9911 10009
+# Expose lnd ports (rest, p2p, watchtower, rpc respectively)
+EXPOSE  8080  9735  9911  10009
 
-# Specify the start command and entrypoint as the lnd daemon.
+# Specify the start command and entrypoint as the lnd daemon
 ENTRYPOINT ["lnd"]
