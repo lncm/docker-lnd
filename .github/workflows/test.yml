@@ -1,20 +1,23 @@
 name: Build branch
 
 on:
-  push:
-    branches: [ '*' ]
+  - push
+  - pull_request
 
 jobs:
   build:
     name: Build lnd
     runs-on: ubuntu-18.04
 
-    env:
-      DOCKER_BUILDKIT: 1
-
     strategy:
       fail-fast: false
       matrix:
+        arch:
+          - amd64
+          - arm64
+          - arm32v6
+          - arm32v7
+
         ver:
           - 0.5
           - 0.6
@@ -22,51 +25,49 @@ jobs:
           - 0.8
           - 0.9
 
-        arch:
-          - amd64
-          - arm64
-          - arm32v6
-          - arm32v7
+    env:
+      DOCKER_BUILDKIT: 1
+      APP: lnd
+      VER_ARCH: "${{matrix.ver}}-${{matrix.arch}}"
 
     steps:
       - uses: actions/checkout@v1.0.0
 
       - name: Verify all patches apply cleanly
+        run: ./scripts/verify-patches.sh "${{matrix.ver}}"
+
+      - name: Setup environment
+        if: matrix.arch != 'amd64'
         run: |
-          if ! ls ${{matrix.ver}}/variant*.patch 1> /dev/null 2>&1; then
-              echo "No variants found. Skipping."
-              exit 0
-          fi
+          GOARCH="$(echo "${{matrix.arch}}" | grep -oE 'arm(64)?')"
+          echo ::set-env name=GOARCH::"${GOARCH}"
 
-          cd ${{matrix.ver}}/
+          GOARM="$(echo "${{matrix.arch}}" | grep arm32 | tail -c 2)"
+          echo ::set-env name=GOARM::"${GOARM}"
 
-          for patch in ./variant-*.patch; do
-            patch --dry-run < "${patch}"
-          done
-
-          cd ..
-
-      - name: Build lnd
+      - name: Build lnd:${{matrix.ver}}-${{matrix.arch}}
         run: |
-          ARCH=${{matrix.arch}}
-          if [[ "${ARCH}" == "arm64" ]]; then
+          ARCH="${{matrix.arch}}"
+          if [[ "${{matrix.arch}}" == "arm64" ]]; then
             ARCH="arm64v8"
           fi
 
           docker build --no-cache "${{matrix.ver}}/" \
             --build-arg "ARCH=${ARCH}" \
-            --tag       "lnd:${{matrix.ver}}-${{matrix.arch}}"
+            --build-arg "GOARCH=${GOARCH}" \
+            --build-arg "GOARM=${GOARM}" \
+            --tag       "${APP}:${VER_ARCH}"
 
       - name: Show built image details
-        run: docker images lnd
+        run: docker images "${APP}"
 
       - name: Save image to a .tgz file
         run: |
           mkdir -p image/
-          docker save "lnd:${{matrix.ver}}-${{matrix.arch}}" | gzip > "image/lnd-${{matrix.ver}}-${{matrix.arch}}.tgz"
+          docker save "${APP}:${VER_ARCH}" | gzip > "image/${APP}-${VER_ARCH}.tgz"
 
       - name: Print sha256sum of produced Docker image
-        run: sha256sum "image/lnd-${{matrix.ver}}-${{matrix.arch}}.tgz"
+        run: sha256sum "image/${APP}-${VER_ARCH}.tgz"
 
       - name: Add Docker image as build artifact
         uses: actions/upload-artifact@v1.0.0
@@ -77,12 +78,12 @@ jobs:
       - name: Extract binaries from the built image
         run: |
           mkdir -p bins/ binaries/
-          ID=$(docker create "lnd:${{matrix.ver}}-${{matrix.arch}}")
-          docker cp  "${ID}:/bin/lnd"    bins/
-          docker cp  "${ID}:/bin/lncli"  bins/
+          ID=$(docker create "${APP}:${VER_ARCH}")
+          docker cp  "${ID}:/bin/${APP}"  bins/
+          docker cp  "${ID}:/bin/lncli"   bins/
           docker rm  "${ID}"
 
-          tar  -C bins/  -cvaf "binaries/lnd-${{matrix.ver}}-${{matrix.arch}}.tgz"  .
+          tar  -C bins/  -cvaf "binaries/${APP}-${VER_ARCH}.tgz"  .
 
       - name: Print sha256sum of extracted binaries
         run: sha256sum bins/*
@@ -100,6 +101,7 @@ jobs:
 
     env:
       QEMU_VERSION: v4.2.0
+      APP: lnd
 
     steps:
       - name: Download build artifact
@@ -117,21 +119,21 @@ jobs:
         run: ls -d docker-images/* | xargs -I %  docker load -i "%"
 
       - name: List all tagged images
-        run: docker images lnd
+        run: docker images "${APP}"
 
       - name: Run sanity checks
         run: |
-          for tag in $(docker images lnd --format "{{.Tag}}"); do
+          for tag in $(docker images "${APP}" --format "{{.Tag}}"); do
             echo
-            echo "~~~~~ lnd:${tag} ~~~~~"
-            docker inspect "lnd:${tag}" | jq '.'
+            echo "~~~~~ ${APP}:${tag} ~~~~~"
+            docker inspect "${APP}:${tag}" | jq '.'
 
-            docker run --rm                         "lnd:${tag}" --version
-            docker run --rm --entrypoint=lncli      "lnd:${tag}" --version
+            docker run --rm                         "${APP}:${tag}" --version
+            docker run --rm --entrypoint=lncli      "${APP}:${tag}" --version
 
-            docker run --rm --entrypoint=uname      "lnd:${tag}" -a
-            docker run --rm --entrypoint=cat        "lnd:${tag}" /etc/os-release
-            docker run --rm --entrypoint=sha256sum  "lnd:${tag}" /bin/lnd /bin/lncli
+            docker run --rm --entrypoint=uname      "${APP}:${tag}" -a
+            docker run --rm --entrypoint=cat        "${APP}:${tag}" /etc/os-release
+            docker run --rm --entrypoint=sha256sum  "${APP}:${tag}" /bin/${APP} /bin/lncli
 
-            docker run --rm --entrypoint=sh         "lnd:${tag}" -c 'apk add --no-cache file && file /bin/lnd /bin/lncli'
+            docker run --rm --entrypoint=sh         "${APP}:${tag}" -c 'apk add --no-cache file && file /bin/${APP} /bin/lncli'
           done

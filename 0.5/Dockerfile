@@ -1,8 +1,10 @@
+# This Dockerfile builds lnd v0.5.x on Alpine, and copies the result binaries to the `final` stage
+
 # lnd version to be build
 ARG VERSION=v0.5.2-beta
 
-# Target CPU archtecture of built IPFS binary
-ARG ARCH=amd64
+# Target CPU archtecture of built lnd binary
+ARG ARCH
 
 # Define default versions so that they don't have to be repreated throughout the file
 ARG VER_GO=1.13
@@ -10,79 +12,42 @@ ARG VER_ALPINE=3.11
 
 
 #
-## This set of Docker stages, serves as a base for all cross-compilation targets.
-#   `go-base` only defines `GOOS`, which is common to all other ARCH-specific stages.
-#   Each supported CPU architecture defines it's own stage, which inherits from `go-base`, and sets up its own ENV VARs.
+## This stage fetches and verifies source code, and applies necessary fixes
 #
-FROM golang:${VER_GO}-alpine${VER_ALPINE} AS go-base
-ENV GOOS linux
-
-FROM go-base AS amd64
-ENV GOARCH amd64
-
-FROM go-base AS arm64v8
-ENV GOARCH arm64
-
-FROM go-base AS arm32v6
-ENV GOARCH arm
-ENV GOARM 6
-
-FROM go-base AS arm32v7
-ENV GOARCH arm
-ENV GOARM 7
-
-
-FROM ${ARCH} AS builder
+FROM golang:${VER_GO}-alpine${VER_ALPINE} AS preparer
 
 ARG VERSION
 
-# Force Go to use the cgo based DNS resolver. This is required to ensure DNS
-# queries required to connect to linked containers succeed.
-ENV GODEBUG netdns=cgo
+RUN apk add --no-cache  gnupg  git
 
-# Install dependencies
-RUN apk add --no-cache alpine-sdk \
-    git \
-    gnupg \
-    gcc \
-    ca-certificates \
-    upx
-
-# Expired @roasbeef GPG key
-ENV KEY F8037E70C12C7A263C032508CE58F7F8E20FD9A2
+ENV KEYS F8037E70C12C7A263C032508CE58F7F8E20FD9A2
 
 # Try to fetch keys from keyservers listed below.  On first success terminate with `exit 0`.  If loop is not interrupted,
 #   it means all attempts failed, and `exit 1` is called.
-RUN for SRV in  keyserver.ubuntu.com  hkp://p80.pool.sks-keyservers.net:80  ha.pool.sks-keyservers.net  keyserver.pgp.com  pgp.mit.edu; do \
-        timeout 9s  gpg  --keyserver "${SRV}"  --recv-keys ${KEY}  >/dev/null 2<&1 && \
-            { echo "OK:  ${SRV}" && exit 0; } || \
-            { echo "ERR: ${SRV} fail=$?"; } ; \
+RUN for srv in  keyserver.ubuntu.com  hkp://p80.pool.sks-keyservers.net:80  ha.pool.sks-keyservers.net  keyserver.pgp.com  pgp.mit.edu; do \
+        timeout 9s  gpg  --keyserver "${srv}"  --recv-keys ${KEYS}  >/dev/null 2<&1 && \
+            { echo "OK:  ${srv}" && exit 0; } || \
+            { echo "ERR: ${srv} fail=$?"; } ; \
     done && exit 1
 
 # This should print the same key twice
 RUN gpg --list-keys && \
-    gpg --list-key ${KEY}
+    gpg --list-keys ${KEYS}
 
 RUN mkdir -p /go/src/
 
-ENV DIR /go/src/lnd/
-
 # Fetch lnd source code
 RUN cd /go/src/ && \
-    git clone  -b "${VERSION}"  --depth=1  https://github.com/lightningnetwork/lnd
+    git clone  -b "${VERSION}"  --depth=1  https://github.com/lightningnetwork/lnd .
 
-WORKDIR /go/src/lnd/
+WORKDIR /go/src/
 
-# NOTE: The fallback condition is a hack around @Roasbeef's "key hygiene".  A manual attempt at accepting expired keys
+## Verify that git tag contains a valid signature
+#   NOTE: The fallback condition is a hack around @Roasbeef's "key hygiene".  A manual attempt at accepting expired keys
 #       through git verify-tag; What can possibly go wrong? 😅
 #       More: https://github.com/lightningnetwork/lnd/issues/3507#issuecomment-532414524
 RUN git verify-tag "${VERSION}" || \
-    { git verify-tag --raw "${VERSION}" 2>&1 | grep EXPKEYSIG && echo "Accepting expired key!"; }
-
-# Print useful info about the environment
-RUN env && \
-    go version && \
-    go env
+    { git verify-tag --raw "${VERSION}" 2>&1 | grep EXPKEYSIG && echo "Accepting valid signature with an expired key!"; }
 
 # Override versions with themselves just in a different format…
 RUN go mod edit \
@@ -92,8 +57,40 @@ RUN go mod edit \
 
 RUN go mod tidy
 
-# Print all source differences applied
+# Show all differences applied on top of upstream
 RUN git diff
+
+
+
+#
+## This stage builds `lnd` & `lncli` in Alpine environment
+#
+#   NOTE: Separation into these stages is not necessary here, but it's done for consistency
+FROM preparer AS builder
+
+# Provided by Docker by default
+ARG TARGETVARIANT
+
+# These two should only be set for cross-compilation
+ARG GOARCH
+ARG GOARM
+
+# Only set GOOS if GOARCH is set
+ENV GOOS ${GOARCH:+linux}
+
+# If GOARM is not set, but TARGETVARIANT is set - hardcode GOARM to 6
+ENV GOARM ${GOARM:-${TARGETVARIANT:+6}}
+
+# Force Go to use the cgo based DNS resolver. This is required to ensure DNS
+#   queries required to connect to linked containers succeed.
+ENV GODEBUG "netdns=cgo"
+
+RUN apk add --no-cache alpine-sdk \
+    gcc \
+    ca-certificates \
+    upx
+
+RUN env && go version && go env
 
 # Build the binaries
 RUN make install
@@ -104,28 +101,30 @@ RUN if [ -d /go/bin/linux_* ]; then \
         rmdir /go/bin/linux_*    ; \
     fi
 
-# Shrink output binaries
+# Compress, and be verbose about it
 RUN upx -v /go/bin/*
+
 
 
 #
 ## This is the final image that gets shipped to Docker Hub
 #
-FROM ${ARCH}/alpine:${VER_ALPINE} AS final
+# NOTE: `${ARCH:+${ARCH}/}` - if ARCH is set, append `/` to it, leave it empty otherwise
+FROM ${ARCH:+${ARCH}/}alpine:${VER_ALPINE} AS final
 
 LABEL maintainer="Damian Mee (@meeDamian)"
 
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY  --from=builder /etc/ssl/certs/ca-certificates.crt  /etc/ssl/certs/
 
-# Copy binaries from the builder image.
-COPY --from=builder /go/bin/lnd     /bin/
-COPY --from=builder /go/bin/lncli   /bin/
+# Copy binaries from the builder image
+COPY  --from=builder /go/bin/lnd    /bin/
+COPY  --from=builder /go/bin/lncli  /bin/
 
-# Define a root volume for data persistence.
+# Expose volume containing all `lnd` data
 VOLUME /root/.lnd
 
-# Expose lnd ports (rest, p2p, rpc respectively).
+# Expose lnd ports (rest, p2p, rpc respectively)
 EXPOSE  8080  9735  10009
 
-# Specify the start command and entrypoint as the lnd daemon.
+# Specify the start command and entrypoint as the lnd daemon
 ENTRYPOINT ["lnd"]

@@ -1,8 +1,8 @@
 diff --git Dockerfile Dockerfile
-index 3ca30a1..6612701 100644
+index 118ab7f..119072a 100644
 --- Dockerfile
 +++ Dockerfile
-@@ -142,7 +142,8 @@ RUN git verify-tag "${VERSION}" || \
+@@ -75,7 +75,8 @@ RUN git verify-tag "${VERSION}" || \
      { git verify-tag --raw "${VERSION}" 2>&1 | grep EXPKEYSIG && echo "Accepting valid signature with an expired key!"; }
  
  # NOTE: needed to have deterministic builds
