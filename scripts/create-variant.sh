@@ -44,6 +44,7 @@ main() {
 
   git add "${dir}/${patchfile}"
   git commit -m "Added: ${dir}/${patchfile}"
+  git checkout -- "${dir}/Dockerfile"
 }
 
 main "$@"

@@ -22,7 +22,7 @@ for file in ${dir}/variant-*.patch; do
 
   dir="$(dirname "${file}")"
 
-  patch -s -d "${dir}" --dry-run < "${file}" && { echo "OK" && continue; }
+  patch -d "${dir}" --dry-run < "${file}" && { echo "OK" && continue; }
 
   echo "FAIL"
   exit_code=1
