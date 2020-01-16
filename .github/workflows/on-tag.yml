@@ -134,7 +134,7 @@ jobs:
 
           for file in binaries/*; do
             gzip "${file}"
-            mv "${file}" "${file}-${TAG}-${{matrix.arch}}.gz"
+            mv "${file}.gz" "${file}-${TAG}-${{matrix.arch}}.gz"
           done
 
       - name: Print sha256sum of extracted binaries
