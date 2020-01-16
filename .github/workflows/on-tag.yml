@@ -23,8 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@v1.0.0
 
-      # Extract the tag, and verify it was a git-tag push
-      #   NOTE: ${TAG} ~= vX.Y.Z[-<variant>][+build<N>]
+      ## Set full name of a git-${TAG}
+      #   fmt:  vX.Y.Z[+build<N>]
+      #   NOTE: Fails if TAG is not found
       - name: Set TAG (env var)
         run: |
           TAG="$(echo "${GITHUB_REF}" | grep 'refs/tags/' | awk -F/ '{print $NF}')"
@@ -34,23 +35,30 @@ jobs:
           fi
           echo ::set-env name=TAG::"${TAG}"
 
-      # Create $ARCH in form that can be used in Dockerfile as `FROM ${ARCH}/alpine`
+      ## Set target ${ARCH}-itecture for Docker Image built in this job.  Used in `final` stage as: `FROM ${ARCH}/alpine:…`
+      #   fmt:  amd64|arm32v6|arm32v8|arm64v8
+      #   NOTE: Replace `arm64` with `arm64v8`
       - name: Set ARCH (env var)
         run: |
           ARCH=${{matrix.arch}}
-          if [[ "${ARCH}" == "arm64" ]]; then
+          if [[ "${{matrix.arch}}" == "arm64" ]]; then
             ARCH="arm64v8"
           fi
           echo ::set-env name=ARCH::"${ARCH}"
 
+      ## Set ${DIR} for the minor-version.  Extract it from ${TAG}
+      #   fmt: 0.X
       - name: Set DIR (env var)
         run: echo ::set-env name=DIR::"$(echo "${TAG}" | tr -d v | cut -d. -f-2)"
 
-      # Extract optional variant to be built
+      ## Set optional ${VARIANT} of the software being built
       #   NOTE: `-` prepended to TAG helps to deal with `cut` ignoring `-f` when no matches for `-d` are found.
       - name: Set VARIANT (env var)
         run: echo ::set-env name=VARIANT::"$(echo "-${TAG}" | cut -d- -f3- | cut -d+ -f1)"
 
+      ## Set ${BUILD} number out of the pushed git-tag
+      #   fmt:  build<N>
+      #   NOTE: Fails if BUILD tag was not set
       - name: Set BUILD (env var)
         run: |
           BUILD="$(echo "+${TAG}" | cut -d+ -f3)"
@@ -111,8 +119,7 @@ jobs:
           docker rm  "${ID}"
 
           for f in binaries/*; do
-            gzip "${f}"
-            mv "${f}.gz" "${f}-${TAG}-${{matrix.arch}}.gz"
+            gzip -S "-${TAG}-${{matrix.arch}}.gz" "${f}"
           done
 
       - name: Print sha256sum of extracted binaries
@@ -285,7 +292,7 @@ jobs:
         with:
           name: docker-images
 
-      - name: Print checksums of binaries
+      - name: Print checksums of everything
         run: sha256sum  binaries/*  docker-images/*
 
       # TODO: change to official way
