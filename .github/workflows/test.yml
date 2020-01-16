@@ -32,19 +32,9 @@ jobs:
       - uses: actions/checkout@v1.0.0
 
       - name: Verify all patches apply cleanly
-        run: |
-          if ! ls ${{matrix.ver}}/variant*.patch 1> /dev/null 2>&1; then
-              echo "No variants found. Skipping."
-              exit 0
-          fi
+        run: ./scripts/verify-patches.sh "${{matrix.ver}}"
 
-          cd ${{matrix.ver}}/
 
-          for patch in ./variant-*.patch; do
-            patch --dry-run < "${patch}"
-          done
-
-          cd ..
 
       - name: Build lnd
         run: |
