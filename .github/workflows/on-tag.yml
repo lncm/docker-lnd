@@ -128,10 +128,11 @@ jobs:
         run: |
           mkdir -p binaries/
           ID=$(docker create "${APP}:${{matrix.arch}}")
-          docker cp  "${ID}:/bin/${APP}"  binaries/
-          docker cp  "${ID}:/bin/lncli"   binaries/
+          docker cp  "${ID}:/usr/local/bin/${APP}"  binaries/
+          docker cp  "${ID}:/usr/local/bin/lncli"   binaries/
           docker rm  "${ID}"
 
+          # Compress each binary separately
           for file in binaries/*; do
             gzip "${file}"
             mv "${file}.gz" "${file}-${TAG}-${{matrix.arch}}.gz"
@@ -175,6 +176,8 @@ jobs:
         run: docker images "${APP}"
 
       - name: Run sanity checks
+        env:
+          DIR: /usr/local/bin
         run: |
           for tag in $(docker images "${APP}" --format "{{.Tag}}"); do
             echo
@@ -186,9 +189,9 @@ jobs:
 
             docker run --rm --entrypoint=uname      "${APP}:${tag}" -a
             docker run --rm --entrypoint=cat        "${APP}:${tag}" /etc/os-release
-            docker run --rm --entrypoint=sha256sum  "${APP}:${tag}" /bin/lnd /bin/lncli
+            docker run --rm --entrypoint=sha256sum  "${APP}:${tag}" "${DIR}/lnd" "${DIR}/lncli"
 
-            docker run --rm --entrypoint=sh -u=root "${APP}:${tag}" -c "apk add --no-cache file && file /bin/${APP} /bin/lncli"
+            docker run --rm --entrypoint=sh -u=root "${APP}:${tag}" -c "apk add --no-cache file && file ${DIR}/${APP} ${DIR}/lncli"
           done
 
 
