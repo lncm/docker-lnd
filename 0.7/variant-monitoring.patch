@@ -1,8 +1,8 @@
 diff --git Dockerfile Dockerfile
-index ed9f858..485e8b5 100644
+index 1dfbfe8..f3d0406 100644
 --- Dockerfile
 +++ Dockerfile
-@@ -26,7 +26,7 @@ ARG TAGS_LND="signrpc chainrpc"
+@@ -29,7 +29,7 @@ ARG TAGS_LND="signrpc chainrpc"
  ARG TAGS_STATIC="osusergo netgo static_build"
  
  # Added by yours truly (@lncm)
@@ -11,7 +11,7 @@ index ed9f858..485e8b5 100644
  
  # Force Go to use the cgo based DNS resolver. This is required to ensure DNS
  #   queries required to connect to linked containers succeed
-@@ -252,5 +252,11 @@ VOLUME /root/.lnd
+@@ -282,5 +282,11 @@ VOLUME ${DIR}/.lnd
  # Expose lnd ports (rest, p2p, rpc respectively)
  EXPOSE  8080  9735  10009
  

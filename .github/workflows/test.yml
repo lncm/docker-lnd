@@ -79,10 +79,11 @@ jobs:
         run: |
           mkdir -p bins/ binaries/
           ID=$(docker create "${APP}:${VER_ARCH}")
-          docker cp  "${ID}:/bin/${APP}"  bins/
-          docker cp  "${ID}:/bin/lncli"   bins/
+          docker cp  "${ID}:/usr/local/bin/${APP}"  bins/
+          docker cp  "${ID}:/usr/local/bin/lncli"   bins/
           docker rm  "${ID}"
 
+          # Compress both binaries into a one archive
           tar  -C bins/  -cvaf "binaries/${APP}-${VER_ARCH}.tgz"  .
 
       - name: Print sha256sum of extracted binaries
@@ -122,6 +123,8 @@ jobs:
         run: docker images "${APP}"
 
       - name: Run sanity checks
+        env:
+          DIR: /usr/local/bin
         run: |
           for tag in $(docker images "${APP}" --format "{{.Tag}}"); do
             echo
@@ -133,7 +136,7 @@ jobs:
 
             docker run --rm --entrypoint=uname      "${APP}:${tag}" -a
             docker run --rm --entrypoint=cat        "${APP}:${tag}" /etc/os-release
-            docker run --rm --entrypoint=sha256sum  "${APP}:${tag}" /bin/${APP} /bin/lncli
+            docker run --rm --entrypoint=sha256sum  "${APP}:${tag}" ${DIR}/${APP} ${DIR}/lncli
 
-            docker run --rm --entrypoint=sh         "${APP}:${tag}" -c 'apk add --no-cache file && file /bin/${APP} /bin/lncli'
+            docker run --rm --entrypoint=sh -u=root "${APP}:${tag}" -c "apk add --no-cache file && file ${DIR}/${APP} ${DIR}/lncli"
           done

@@ -1,8 +1,8 @@
 diff --git Dockerfile Dockerfile
-index 118ab7f..58e9482 100644
+index cda3a7e..641f9c2 100644
 --- Dockerfile
 +++ Dockerfile
-@@ -26,7 +26,7 @@ ARG TAGS_LND="signrpc chainrpc"
+@@ -29,7 +29,7 @@ ARG TAGS_LND="signrpc chainrpc"
  ARG TAGS_STATIC="osusergo netgo static_build"
  
  # Added by yours truly (@lncm)
