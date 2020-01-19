@@ -10,6 +10,9 @@ ARG ARCH
 ARG VER_GO=1.13
 ARG VER_ALPINE=3.11
 
+ARG USER=lnd
+ARG DIR=/data/
+
 
 #
 ## This stage fetches and verifies source code, and applies necessary fixes
@@ -106,21 +109,48 @@ RUN upx -v /go/bin/*
 
 
 #
+## This stage is used to generate /etc/{group,passwd,shadow} files & avoid RUN-ing commands in the `final` layer,
+#   which would break cross-compiled images.
+#
+FROM alpine:${VER_ALPINE} AS perms
+
+ARG USER
+ARG DIR
+
+# NOTE: Default GID == UID == 1000
+RUN adduser --disabled-password \
+            --home ${DIR} \
+            --gecos "" \
+            ${USER}
+
+
+
+#
 ## This is the final image that gets shipped to Docker Hub
 #
 # NOTE: `${ARCH:+${ARCH}/}` - if ARCH is set, append `/` to it, leave it empty otherwise
 FROM ${ARCH:+${ARCH}/}alpine:${VER_ALPINE} AS final
 
+ARG USER
+ARG DIR
+
 LABEL maintainer="Damian Mee (@meeDamian)"
+
+# Copy only the relevant parts from the `perms` image
+COPY  --from=perms  /etc/group   /etc/
+COPY  --from=perms  /etc/passwd  /etc/
+COPY  --from=perms  /etc/shadow  /etc/
 
 COPY  --from=builder /etc/ssl/certs/ca-certificates.crt  /etc/ssl/certs/
 
 # Copy binaries from the builder image
-COPY  --from=builder /go/bin/lnd    /bin/
-COPY  --from=builder /go/bin/lncli  /bin/
+COPY  --from=builder /go/bin/lnd    /usr/local/bin/
+COPY  --from=builder /go/bin/lncli  /usr/local/bin/
+
+USER ${USER}
 
 # Expose volume containing all `lnd` data
-VOLUME /root/.lnd
+VOLUME ${DIR}/.lnd
 
 # Expose lnd ports (rest, p2p, rpc respectively)
 EXPOSE  8080  9735  10009
