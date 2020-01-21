@@ -250,6 +250,10 @@ RUN adduser --disabled-password \
             --gecos "" \
             ${USER}
 
+# Needed to prevent `VOLUME ${DIR}/.lnd/` creating it with `root` as owner
+USER ${USER}
+RUN mkdir -p ${DIR}/.lnd/
+
 
 
 #
@@ -266,6 +270,10 @@ LABEL maintainer="Damian Mee (@meeDamian)"
 # Copy only the relevant parts from the `perms` image
 COPY  --from=perms /etc/group /etc/passwd /etc/shadow  /etc/
 
+# From `perms`, copy *the contents* of `${DIR}` (ie. `.lnd/`), and set correct owner for destination `${DIR}`
+COPY  --from=perms --chown=${USER}:${USER} ${DIR}  ${DIR}
+
+#
 COPY  --from=cross-check /etc/ssl/certs/ca-certificates.crt  /etc/ssl/certs/
 
 # Copy binaries from the cross-check stage
@@ -274,7 +282,7 @@ COPY  --from=cross-check /bin/lnd /bin/lncli  /usr/local/bin/
 USER ${USER}
 
 # Expose volume containing all `lnd` data
-VOLUME ${DIR}/.lnd
+VOLUME ${DIR}/.lnd/
 
 # Expose lnd ports (rest, p2p, rpc respectively)
 EXPOSE  8080  9735  10009
