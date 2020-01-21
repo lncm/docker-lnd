@@ -302,6 +302,11 @@ jobs:
     runs-on: ubuntu-18.04
     needs: build
     steps:
+      - name: Setup environment
+        run: |
+          VERSION="$(echo "${GITHUB_REF}" | grep 'refs/tags/' | awk -F/ '{print $NF}' | cut -d+ -f1)"
+          echo ::set-env name=VERSION::"${VERSION}"
+
       - name: Download binaries from build artifacts
         uses: actions/download-artifact@v1.0.0
         with:
@@ -320,6 +325,7 @@ jobs:
         uses: meeDamian/github-release@v1.0.1
         with:
           token: ${{secrets.GITHUB_TOKEN}}
+          body: "This release packages `lnd` version released here: https://github.com/lightningnetwork/lnd/releases/tag/${VERSION}"
           prerelease: true
           gzip: false
           files: >
