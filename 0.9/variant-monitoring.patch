@@ -1,5 +1,5 @@
 diff --git Dockerfile Dockerfile
-index fa7484b..6406ead 100644
+index 131b6c6..e05e0a6 100644
 --- Dockerfile
 +++ Dockerfile
 @@ -29,7 +29,7 @@ ARG TAGS_LND="signrpc chainrpc"
@@ -11,7 +11,7 @@ index fa7484b..6406ead 100644
  
  # Force Go to use the cgo based DNS resolver. This is required to ensure DNS
  #   queries required to connect to linked containers succeed
-@@ -280,5 +280,11 @@ VOLUME ${DIR}/.lnd
+@@ -285,5 +285,11 @@ VOLUME ${DIR}/.lnd/
  # Expose lnd ports (rest, p2p, watchtower, rpc respectively)
  EXPOSE  8080  9735  9911  10009
  
