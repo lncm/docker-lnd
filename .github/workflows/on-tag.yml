@@ -81,6 +81,7 @@ jobs:
       - name: Print ENV VARs set above
         run: |
           printf "Git tag & arch processed:\n"
+          printf "    APP: %s\n"            "${APP}"
           printf "   ARCH: %s (from %s)\n"  "${ARCH}" "${{matrix.arch}}"
           printf "    TAG: %s\n"            "${TAG}"
           printf "VARIANT: %s\n"            "${VARIANT}"

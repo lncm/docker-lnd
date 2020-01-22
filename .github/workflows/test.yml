@@ -83,7 +83,7 @@ jobs:
           docker cp  "${ID}:/usr/local/bin/lncli"   bins/
           docker rm  "${ID}"
 
-          # Compress both binaries into a one archive
+          # Compress both binaries into one archive
           tar  -C bins/  -cvaf "binaries/${APP}-${VER_ARCH}.tgz"  .
 
       - name: Print sha256sum of extracted binaries
