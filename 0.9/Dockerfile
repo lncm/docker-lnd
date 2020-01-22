@@ -2,7 +2,7 @@
 # If the binaries are the same, one is compressed, and copied to the `final` stage
 
 # lnd version to be build
-ARG VERSION=v0.9.0-beta-rc3
+ARG VERSION=v0.9.0-beta
 
 # Target CPU archtecture of built lnd binary
 ARG ARCH
@@ -20,7 +20,7 @@ ARG DIR=/data/
 ARG PKG=github.com/lightningnetwork/lnd
 
 # original content
-#   src: https://github.com/lightningnetwork/lnd/blob/v0.9.0-beta-rc3/build/release/release.sh#L133-L134
+#   src: https://github.com/lightningnetwork/lnd/blob/v0.9.0-beta/build/release/release.sh#L133-L134
 ARG TAGS_BASE="autopilotrpc invoicesrpc walletrpc routerrpc watchtowerrpc"
 ARG TAGS_LND="signrpc chainrpc"
 
