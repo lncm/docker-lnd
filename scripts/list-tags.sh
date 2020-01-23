@@ -18,6 +18,8 @@ main() {
     | tr -s '~' '-' \
     | grep -v '\-\(arm32\|arm64\|amd64\|linux-arm\)' \
     | awk -F- '$1!=a && NR>1 {print "\n"}; {ORS=""; printf "`%s` ", $0}; {a=$1}'
+
+    echo
 }
 
 main "lncm/lnd"
