@@ -6,7 +6,7 @@ set -eo pipefail
 ## This script returns all lnd tags sorted newest to oldest, with all variants of the same version on the same line
 #
 
-list() {
+main() {
   declare repo="$1"
 
   curl -s "https://registry.hub.docker.com/v1/repositories/${repo}/tags" \
@@ -20,20 +20,4 @@ list() {
     | awk -F- '$1!=a && NR>1 {print "\n"}; {ORS=""; printf "`%s` ", $0}; {a=$1}'
 }
 
-BASE_PATH="$(dirname "$(dirname "$(realpath "$0")")")"
-
-main() {
-  declare update="$1"
-
-  tags=$(list "lncm/lnd")
-
-  echo "${tags}"
-
-  if [[ "${update}" == "true" ]]; then
-    # Only works on a Mac
-    gsed -Ei "s|(<\!\-\- TAGS \-\->).*(<\!\-\- \/TAGS \-\->)|\1 ${tags//$'\n'/<br>} \2|"  "${BASE_PATH}/README.md"
-  fi
-}
-
-
-main "$@"
+main "lncm/lnd"

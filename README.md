@@ -54,7 +54,18 @@ This repo builds [`lnd`] in a completely reproducible, and auditable way, and pa
 
 > **NOTE:** For an always up-to-date list see: https://hub.docker.com/r/lncm/lnd/tags
 
-<!-- TAGS --> `v0.9.0` `v0.9.0-monitoring` `v0.9.0-experimental` <br>`v0.8.2` `v0.8.2-monitoring` `v0.8.2-experimental` <br>`v0.8.1` `v0.8.1-monitoring` `v0.8.1-experimental` <br>`v0.8.0` `v0.8.0-monitoring` `v0.8.0-experimental` `v0.8.0-bitcoind-0.19` <br>`v0.7.1` `v0.7.1-monitoring` <br>`v0.7.0` <br>`v0.6.1` <br>`v0.5.2`  <!-- /TAGS -->
+* `v0.9.0` `v0.9.0-monitoring` `v0.9.0-experimental`
+
+* `v0.8.2` `v0.8.2-monitoring` `v0.8.2-experimental`
+* `v0.8.1` `v0.8.1-monitoring` `v0.8.1-experimental`
+* `v0.8.0` `v0.8.0-monitoring` `v0.8.0-experimental` `v0.8.0-bitcoind-0.19`
+
+* `v0.7.1` `v0.7.1-monitoring`
+* `v0.7.0`
+
+* `v0.6.1`
+
+* `v0.5.2`
 
 ## Usage
 
