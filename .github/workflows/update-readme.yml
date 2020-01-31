@@ -15,9 +15,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2.0.0
 
+      - name: Setup Environment
+        run: echo ::set-env name=SLUG::"$(echo ${GITHUB_REPOSITORY,,} | sed 's/docker-//')"
+
       - name: Sync README.md and Description to Docker Hub
         uses: meeDamian/sync-readme@v1.0.6
         with:
           user: ${{ secrets.DOCKER_USER }}
           pass: ${{ secrets.DOCKER_PASS }}
+          slug: ${{env.SLUG}}
           description: true
