@@ -289,14 +289,6 @@ jobs:
       - name: Push manifest
         run: docker manifest push "${SLUG}:${VERSION}"
 
-      # TODO: broken; see: https://github.com/docker/hub-feedback/issues/1927
-#      - name: Sync README.md and Description to Docker Hub
-#        uses: meeDamian/sync-readme@v1.0.5
-#        with:
-#          pass: ${{secrets.DOCKER_TOKEN}}
-#          slug: ${{env.SLUG}}
-#          description: true
-
 
   github-release:
     name: Create Github Release. Only after successful build of a pushed git tag
