@@ -8,7 +8,7 @@ ARG VERSION=v0.7.1-beta
 ARG ARCH
 
 # Define default versions so that they don't have to be repreated throughout the file
-ARG VER_GO=1.13
+ARG VER_GO=1.14
 ARG VER_ALPINE=3.11
 
 ARG USER=lnd
@@ -42,6 +42,7 @@ ARG GODEBUG="netdns=cgo"
 FROM golang:${VER_GO}-alpine${VER_ALPINE} AS preparer
 
 ARG VERSION
+ARG VER_GO
 
 RUN apk add --no-cache  gnupg  git
 
@@ -79,7 +80,7 @@ RUN git verify-tag "${VERSION}" || \
 
 # NOTE: context: https://github.com/lightningnetwork/lnd/issues/3506
 RUN go mod edit \
-    -go=1.13 \
+    -go="$VER_GO" \
     -replace="github.com/btcsuite/btcwallet=github.com/btcsuite/btcwallet@v0.0.0-20190814023431-505acf51507f"
 
 RUN go mod tidy

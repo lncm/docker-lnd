@@ -8,7 +8,7 @@ ARG VERSION=v0.8.2-beta
 ARG ARCH
 
 # Define default versions so that they don't have to be repreated throughout the file
-ARG VER_GO=1.13
+ARG VER_GO=1.14
 ARG VER_ALPINE=3.11
 
 ARG USER=lnd
@@ -42,6 +42,7 @@ ARG GODEBUG="netdns=cgo"
 FROM golang:${VER_GO}-alpine${VER_ALPINE} AS preparer
 
 ARG VERSION
+ARG VER_GO
 
 RUN apk add --no-cache  gnupg  git
 
@@ -78,7 +79,7 @@ RUN git verify-tag "${VERSION}" || \
     { git verify-tag --raw "${VERSION}" 2>&1 | grep EXPKEYSIG && echo "Accepting valid signature with an expired key!"; }
 
 # NOTE: needed to have deterministic builds
-RUN go mod edit -go=1.13
+RUN go mod edit -go="$VER_GO"
 
 RUN go mod tidy
 
