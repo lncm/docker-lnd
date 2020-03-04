@@ -17,15 +17,15 @@ fi
 exit_code=0
 
 # shellcheck disable=SC2231
-for file in ${dir}/variant-*.patch; do
-  printf "\nChecking: %s…\n" "${file}"
+for file in $dir/variant-*.patch; do
+  printf "\nChecking: %s…\n" "$file"
 
-  dir="$(dirname "${file}")"
+  dir="$(dirname "$file")"
 
-  patch -d "${dir}" --dry-run < "${file}" && { echo "OK" && continue; }
+  patch -d "$dir" --dry-run < "$file" && { echo "OK" && continue; }
 
   echo "FAIL"
   exit_code=1
 done
 
-exit "${exit_code}"
+exit "$exit_code"

@@ -9,7 +9,7 @@ set -eo pipefail
 main() {
   declare repo="$1"
 
-  curl -s "https://registry.hub.docker.com/v1/repositories/${repo}/tags" \
+  curl -s "https://registry.hub.docker.com/v1/repositories/$repo/tags" \
     | jq -r '.[].name' \
     | grep '^v.*' \
     | sed 's/-build.*//' \
