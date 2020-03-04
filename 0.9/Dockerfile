@@ -8,7 +8,7 @@ ARG VERSION=v0.9.0-beta
 ARG ARCH
 
 # Define default versions so that they don't have to be repreated throughout the file
-ARG VER_GO=1.13
+ARG VER_GO=1.14
 ARG VER_ALPINE=3.11
 
 ARG USER=lnd
