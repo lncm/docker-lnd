@@ -45,10 +45,10 @@ jobs:
         if: matrix.arch != 'amd64'
         run: |
           GOARCH="$(echo "${{matrix.arch}}" | grep -oE 'arm(64)?')"
-          echo ::set-env name=GOARCH::"${GOARCH}"
+          echo ::set-env name=GOARCH::"$GOARCH"
 
           GOARM="$(echo "${{matrix.arch}}" | grep arm32 | tail -c 2)"
-          echo ::set-env name=GOARM::"${GOARM}"
+          echo ::set-env name=GOARM::"$GOARM"
 
       - name: Build lnd:${{matrix.ver}}-${{matrix.arch}}
         run: |
@@ -58,21 +58,21 @@ jobs:
           fi
 
           docker build --no-cache "${{matrix.ver}}/" \
-            --build-arg "ARCH=${ARCH}" \
-            --build-arg "GOARCH=${GOARCH}" \
-            --build-arg "GOARM=${GOARM}" \
-            --tag       "${APP}:${VER_ARCH}"
+            --build-arg "ARCH=$ARCH" \
+            --build-arg "GOARCH=$GOARCH" \
+            --build-arg "GOARM=$GOARM" \
+            --tag       "$APP:$VER_ARCH"
 
       - name: Show built image details
-        run: docker images "${APP}"
+        run: docker images "$APP"
 
       - name: Save image to a .tgz file
         run: |
           mkdir -p image/
-          docker save "${APP}:${VER_ARCH}" | gzip > "image/${APP}-${VER_ARCH}.tgz"
+          docker save "$APP:$VER_ARCH" | gzip > "image/$APP-$VER_ARCH.tgz"
 
       - name: Print sha256sum of produced Docker image
-        run: sha256sum "image/${APP}-${VER_ARCH}.tgz"
+        run: sha256sum "image/$APP-$VER_ARCH.tgz"
 
       - name: Add Docker image as build artifact
         uses: actions/upload-artifact@v1.0.0
@@ -83,13 +83,13 @@ jobs:
       - name: Extract binaries from the built image
         run: |
           mkdir -p bins/ binaries/
-          ID=$(docker create "${APP}:${VER_ARCH}")
-          docker cp  "${ID}:/usr/local/bin/${APP}"  bins/
-          docker cp  "${ID}:/usr/local/bin/lncli"   bins/
-          docker rm  "${ID}"
+          ID=$(docker create "$APP:$VER_ARCH")
+          docker cp  "$ID:/usr/local/bin/$APP"    bins/
+          docker cp  "$ID:/usr/local/bin/lncli"   bins/
+          docker rm  "$ID"
 
           # Compress both binaries into one archive
-          tar  -C bins/  -cvaf "binaries/${APP}-${VER_ARCH}.tgz"  .
+          tar  -C bins/  -cvaf "binaries/$APP-$VER_ARCH.tgz"  .
 
       - name: Print sha256sum of extracted binaries
         run: sha256sum bins/*
@@ -119,29 +119,29 @@ jobs:
         run: sha256sum docker-images/*
 
       - name: Register self-compiled qemu
-        run: docker run --rm --privileged "meedamian/simple-qemu:${QEMU_VERSION}" -p yes
+        run: docker run --rm --privileged "meedamian/simple-qemu:$QEMU_VERSION" -p yes
 
       - name: Load all images locally
         run: ls -d docker-images/* | xargs -I %  docker load -i "%"
 
       - name: List all tagged images
-        run: docker images "${APP}"
+        run: docker images "$APP"
 
       - name: Run sanity checks
         env:
           DIR: /usr/local/bin
         run: |
-          for tag in $(docker images "${APP}" --format "{{.Tag}}"); do
-            echo
-            echo "~~~~~ ${APP}:${tag} ~~~~~"
-            docker inspect "${APP}:${tag}" | jq '.'
+          for tag in $(docker images "$APP" --format "{{.Tag}}"); do
+            echo ""
+            echo "~~~~~ $APP:$tag ~~~~~"
+            docker inspect "$APP:$tag" | jq '.'
 
-            docker run --rm                         "${APP}:${tag}" --version
-            docker run --rm --entrypoint=lncli      "${APP}:${tag}" --version
+            docker run --rm                         "$APP:$tag" --version
+            docker run --rm --entrypoint=lncli      "$APP:$tag" --version
 
-            docker run --rm --entrypoint=uname      "${APP}:${tag}" -a
-            docker run --rm --entrypoint=cat        "${APP}:${tag}" /etc/os-release
-            docker run --rm --entrypoint=sha256sum  "${APP}:${tag}" ${DIR}/${APP} ${DIR}/lncli
+            docker run --rm --entrypoint=uname      "$APP:$tag" -a
+            docker run --rm --entrypoint=cat        "$APP:$tag" /etc/os-release
+            docker run --rm --entrypoint=sha256sum  "$APP:$tag" $DIR/$APP $DIR/lncli
 
-            docker run --rm --entrypoint=sh -u=root "${APP}:${tag}" -c "apk add --no-cache file && file ${DIR}/${APP} ${DIR}/lncli"
+            docker run --rm --entrypoint=sh -u=root "$APP:$tag" -c "apk add --no-cache file && file $DIR/$APP $DIR/lncli"
           done
