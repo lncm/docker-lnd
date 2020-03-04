@@ -297,8 +297,11 @@ jobs:
     steps:
       - name: Setup environment
         run: |
-          VERSION="$(echo "${GITHUB_REF}" | grep 'refs/tags/' | awk -F/ '{print $NF}' | cut -d+ -f1)"
-          echo ::set-env name=VERSION::"${VERSION}"
+          VERSION="$(echo "$GITHUB_REF" | grep 'refs/tags/' | awk -F/ '{print $NF}' | cut -d+ -f1)"
+          echo ::set-env name=VERSION::"$VERSION"
+
+          LND_VERSION="$(echo "$VERSION" | cut -d- -f1)-beta"
+          echo ::set-env name=LND_VERSION::"$LND_VERSION"
 
       - name: Download binaries from build artifacts
         uses: actions/download-artifact@v1.0.0
@@ -318,7 +321,8 @@ jobs:
         uses: meeDamian/github-release@v1.0.1
         with:
           token: ${{secrets.GITHUB_TOKEN}}
-          body: "This release packages `lnd` version released here: https://github.com/lightningnetwork/lnd/releases/tag/${VERSION}"
+          name: ${{env.VERSION}}
+          body: "This release packages `lnd` version released here: https://github.com/lightningnetwork/lnd/releases/tag/${{env.LND_VERSION}}"
           prerelease: true
           gzip: false
           files: >
