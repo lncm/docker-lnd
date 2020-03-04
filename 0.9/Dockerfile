@@ -131,7 +131,6 @@ RUN env && go version && go env
 ## Build lnd binaries
 #   The first line gets hash of the last git-commit & second one prints it.
 #   And here's all other flags explained:
-#       `-x` [verbocity++] print all executed commands
 #       `-v` [verbocity++] print names of compiled packages
 #       `-mod=readonly` [reproducibility] do not change versions of used packages no matter what
 #       `-trimpath` [reproducibility] make sure absolute paths are not included anywhere in the binary
@@ -146,10 +145,10 @@ RUN env && go version && go env
 #       an output of an expression
 RUN export GIT_TAG="$(git describe --abbrev=40)"; \
     echo "Building git tag: ${GIT_TAG}"; \
-    go build  -x  -v  -trimpath  -mod=readonly  -tags="${TAGS} ${TAGS_LND}" \
+    go build  -v  -trimpath  -mod=readonly  -tags="${TAGS} ${TAGS_LND}" \
         -ldflags="${LDFLAGS} -X ${PKG}/build.Commit=${GIT_TAG}" \
         -o /go/bin/  "${PKG}/cmd/lnd" && \
-    go build  -x  -v  -trimpath  -mod=readonly  -tags="${TAGS}" \
+    go build  -v  -trimpath  -mod=readonly  -tags="${TAGS}" \
         -ldflags="${LDFLAGS} -X ${PKG}/build.Commit=${GIT_TAG}" \
         -o /go/bin/  "${PKG}/cmd/lncli"
 
@@ -188,10 +187,10 @@ RUN env && go version && go env
 
 RUN export GIT_TAG="$(git describe --abbrev=40)"; \
     echo "Building git tag: ${GIT_TAG}"; \
-    go build  -x  -v  -trimpath  -mod=readonly  -tags="${TAGS} ${TAGS_LND}" \
+    go build  -v  -trimpath  -mod=readonly  -tags="${TAGS} ${TAGS_LND}" \
         -ldflags="${LDFLAGS} -X ${PKG}/build.Commit=${GIT_TAG}" \
         -o /go/bin/  "${PKG}/cmd/lnd" && \
-    go build  -x  -v  -trimpath  -mod=readonly  -tags="${TAGS}" \
+    go build  -v  -trimpath  -mod=readonly  -tags="${TAGS}" \
         -ldflags="${LDFLAGS} -X ${PKG}/build.Commit=${GIT_TAG}" \
         -o /go/bin/  "${PKG}/cmd/lncli"
 
@@ -226,7 +225,7 @@ RUN mv  /alpine/*  /bin/
 # Compress, and be verbose about it
 RUN upx -v /bin/lnd  /bin/lncli
 
-# Print binaries info PAST compression
+# Print binaries' info PAST compression
 RUN sha256sum   /bin/lnd  /bin/lncli
 RUN file        /bin/lnd  /bin/lncli
 RUN du          /bin/lnd  /bin/lncli
