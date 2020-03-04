@@ -53,21 +53,21 @@ ENV KEYS F8037E70C12C7A263C032508CE58F7F8E20FD9A2
 # Second, also try to fetch that key from keyservers (in case it's not his key, or he already discarded it…).
 #   This command doesn't stop the flow on error, and
 #   Key verification happens in the next step
-RUN wget -qO- "https://keybase.io/${KEYBASE_USER}/pgp_keys.asc" | gpg --import && \
+RUN wget -qO- "https://keybase.io/$KEYBASE_USER/pgp_keys.asc" | gpg --import && \
     for srv in  keyserver.ubuntu.com  hkp://p80.pool.sks-keyservers.net:80  ha.pool.sks-keyservers.net  keyserver.pgp.com  pgp.mit.edu; do \
-        timeout 9s  gpg  --keyserver "${srv}"  --recv-key ${KEYS}  >/dev/null 2<&1 && \
-            { echo "OK:  ${srv}" && exit 0; } || \
-            { echo "ERR: ${srv} fail=$?"; } ; \
+        timeout 9s  gpg  --keyserver "$srv"  --recv-key $KEYS  >/dev/null 2<&1 && \
+            { echo "OK:  $srv" && exit 0; } || \
+            { echo "ERR: $srv fail=$?"; } ; \
     done
 
 RUN gpg --list-keys && \
-    gpg --list-keys ${KEYS}
+    gpg --list-keys $KEYS
 
 RUN mkdir -p /go/src/
 
 # Fetch lnd source code
 RUN cd /go/src/ && \
-    git clone  -b "${VERSION}"  --depth=1  https://github.com/lightningnetwork/lnd .
+    git clone  -b "$VERSION"  --depth=1  https://github.com/lightningnetwork/lnd .
 
 WORKDIR /go/src/
 
@@ -75,8 +75,8 @@ WORKDIR /go/src/
 #   NOTE: The fallback condition is a hack around @Roasbeef's "key hygiene".  A manual attempt at accepting expired keys
 #       through git verify-tag; What can possibly go wrong? 😅
 #       More: https://github.com/lightningnetwork/lnd/issues/3507#issuecomment-532414524
-RUN git verify-tag "${VERSION}" || \
-    { git verify-tag --raw "${VERSION}" 2>&1 | grep EXPKEYSIG && echo "Accepting valid signature with an expired key!"; }
+RUN git verify-tag "$VERSION" || \
+    { git verify-tag --raw "$VERSION" 2>&1 | grep EXPKEYSIG && echo "Accepting valid signature with an expired key!"; }
 
 # NOTE: context: https://github.com/lightningnetwork/lnd/issues/3506
 RUN go mod edit \
@@ -111,7 +111,7 @@ ARG TAGS_EXTRA
 ARG GODEBUG
 
 # Aggregate all tags together
-ENV TAGS="${TAGS_BASE} ${TAGS_STATIC} ${TAGS_EXTRA}"
+ENV TAGS="$TAGS_BASE $TAGS_STATIC $TAGS_EXTRA"
 
 # Only set GOOS if GOARCH is set
 ENV GOOS ${GOARCH:+linux}
@@ -148,13 +148,13 @@ RUN env && go version && go env
 #   NOTE: all of this has to happen in a single `RUN`, because it's impossible to set ENV var in Docker to
 #       an output of an expression
 RUN export GIT_TAG="$(git describe --abbrev=40)"; \
-    echo "Building git tag: ${GIT_TAG}"; \
-    go build  -x  -v  -trimpath  -mod=readonly  -tags="${TAGS} ${TAGS_LND}" \
-        -ldflags="${LDFLAGS} -X ${PKG}/build.Commit=${GIT_TAG}" \
-        -o /go/bin/  "${PKG}/cmd/lnd" && \
-    go build  -x  -v  -trimpath  -mod=readonly  -tags="${TAGS}" \
-        -ldflags="${LDFLAGS} -X ${PKG}/build.Commit=${GIT_TAG}" \
-        -o /go/bin/  "${PKG}/cmd/lncli"
+    echo "Building git tag: $GIT_TAG"; \
+    go build  -x  -v  -trimpath  -mod=readonly  -tags="$TAGS $TAGS_LND" \
+        -ldflags="$LDFLAGS -X $PKG/build.Commit=$GIT_TAG" \
+        -o /go/bin/  "$PKG/cmd/lnd" && \
+    go build  -x  -v  -trimpath  -mod=readonly  -tags="$TAGS" \
+        -ldflags="$LDFLAGS -X $PKG/build.Commit=$GIT_TAG" \
+        -o /go/bin/  "$PKG/cmd/lncli"
 
 
 
@@ -174,7 +174,7 @@ ARG TAGS_STATIC
 ARG TAGS_EXTRA
 ARG GODEBUG
 
-ENV TAGS="${TAGS_BASE} ${TAGS_STATIC} ${TAGS_EXTRA}"
+ENV TAGS="$TAGS_BASE $TAGS_STATIC $TAGS_EXTRA"
 ENV GOOS ${GOARCH:+linux}
 ENV GOARM ${GOARM:-${TARGETVARIANT:+6}}
 ENV LDFLAGS "-s -w -buildid="
@@ -190,13 +190,13 @@ WORKDIR /go/src/
 RUN env && go version && go env
 
 RUN export GIT_TAG="$(git describe --abbrev=40)"; \
-    echo "Building git tag: ${GIT_TAG}"; \
-    go build  -x  -v  -trimpath  -mod=readonly  -tags="${TAGS} ${TAGS_LND}" \
-        -ldflags="${LDFLAGS} -X ${PKG}/build.Commit=${GIT_TAG}" \
-        -o /go/bin/  "${PKG}/cmd/lnd" && \
-    go build  -x  -v  -trimpath  -mod=readonly  -tags="${TAGS}" \
-        -ldflags="${LDFLAGS} -X ${PKG}/build.Commit=${GIT_TAG}" \
-        -o /go/bin/  "${PKG}/cmd/lncli"
+    echo "Building git tag: $GIT_TAG"; \
+    go build  -x  -v  -trimpath  -mod=readonly  -tags="$TAGS $TAGS_LND" \
+        -ldflags="$LDFLAGS -X $PKG/build.Commit=$GIT_TAG" \
+        -o /go/bin/  "$PKG/cmd/lnd" && \
+    go build  -x  -v  -trimpath  -mod=readonly  -tags="$TAGS" \
+        -ldflags="$LDFLAGS -X $PKG/build.Commit=$GIT_TAG" \
+        -o /go/bin/  "$PKG/cmd/lncli"
 
 
 
@@ -247,13 +247,13 @@ ARG DIR
 
 # NOTE: Default GID == UID == 1000
 RUN adduser --disabled-password \
-            --home ${DIR} \
+            --home "$DIR" \
             --gecos "" \
-            ${USER}
+            "$USER"
 
 # Needed to prevent `VOLUME ${DIR}/.lnd/` creating it with `root` as owner
-USER ${USER}
-RUN mkdir -p ${DIR}/.lnd/
+USER $USER
+RUN mkdir -p "$DIR/.lnd/"
 
 
 
@@ -272,7 +272,7 @@ LABEL maintainer="Damian Mee (@meeDamian)"
 COPY  --from=perms /etc/group /etc/passwd /etc/shadow  /etc/
 
 # From `perms`, copy *the contents* of `${DIR}` (ie. `.lnd/`), and set correct owner for destination `${DIR}`
-COPY  --from=perms --chown=${USER}:${USER} ${DIR}  ${DIR}
+COPY  --from=perms --chown=$USER:$USER $DIR  $DIR
 
 #
 COPY  --from=cross-check /etc/ssl/certs/ca-certificates.crt  /etc/ssl/certs/
@@ -280,10 +280,10 @@ COPY  --from=cross-check /etc/ssl/certs/ca-certificates.crt  /etc/ssl/certs/
 # Copy binaries from the cross-check stage
 COPY  --from=cross-check /bin/lnd /bin/lncli  /usr/local/bin/
 
-USER ${USER}
+USER $USER
 
 # Expose volume containing all `lnd` data
-VOLUME ${DIR}/.lnd/
+VOLUME $DIR/.lnd/
 
 # Expose lnd ports (rest, p2p, rpc respectively)
 EXPOSE  8080  9735  10009

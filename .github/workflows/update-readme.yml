@@ -23,5 +23,5 @@ jobs:
         with:
           user: ${{ secrets.DOCKER_USER }}
           pass: ${{ secrets.DOCKER_PASS }}
-          slug: ${{env.SLUG}}
+          slug: ${{ env.SLUG }}
           description: true
