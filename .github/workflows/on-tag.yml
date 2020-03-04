@@ -293,7 +293,7 @@ jobs:
   github-release:
     name: Create Github Release. Only after successful build of a pushed git tag
     runs-on: ubuntu-18.04
-    needs: build
+    needs: test
     steps:
       - name: Setup environment
         run: |
