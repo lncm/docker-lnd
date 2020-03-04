@@ -1,8 +1,13 @@
 name: Build branch
 
+# Build on pushes to any branch, and PRs to `master` (hopefully it doesn't trigger on tag pushes…)
 on:
-  - push
-  - pull_request
+  push:
+    branches: [ '*' ]
+    tags-ignore: [ '*' ]
+
+  pull_request:
+    branches: [ 'master' ]
 
 jobs:
   build:
