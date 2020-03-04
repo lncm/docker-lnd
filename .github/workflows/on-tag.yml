@@ -24,19 +24,19 @@ jobs:
     steps:
       - uses: actions/checkout@v1.0.0
 
-      ## Set full name of a git-${TAG}
+      ## Set full name of a git-$TAG
       #   fmt:  vX.Y.Z[+build<N>]
       #   NOTE: Fails if TAG is not found
       - name: Set TAG (env var)
         run: |
-          TAG="$(echo "${GITHUB_REF}" | grep 'refs/tags/' | awk -F/ '{print $NF}')"
-          if [[ -z "${TAG}" ]]; then
+          TAG="$(echo "$GITHUB_REF" | grep 'refs/tags/' | awk -F/ '{print $NF}')"
+          if [[ -z "$TAG" ]]; then
             echo "This action has to be run on a git-tag push"
             exit 1
           fi
-          echo ::set-env name=TAG::"${TAG}"
+          echo ::set-env name=TAG::"$TAG"
 
-      ## Set target ${ARCH}-itecture for Docker Image built in this job.  Used in `final` stage as: `FROM ${ARCH}/alpine:…`
+      ## Set target $ARCH-itecture for Docker Image built in this job.  Used in `final` stage as: `FROM $ARCH/alpine:…`
       #   fmt:  amd64|arm32v6|arm32v8|arm64v8
       #   NOTE: Replace `arm64` with `arm64v8`
       - name: Set ARCH (env var)
@@ -45,76 +45,76 @@ jobs:
           if [[ "${{matrix.arch}}" == "arm64" ]]; then
             ARCH="arm64v8"
           fi
-          echo ::set-env name=ARCH::"${ARCH}"
+          echo ::set-env name=ARCH::"$ARCH"
 
-      ## Set ${DIR} for the minor-version.  Extract it from ${TAG}
+      ## Set $DIR for the minor-version.  Extract it from $TAG
       #   fmt: 0.X
       - name: Set DIR (env var)
-        run: echo ::set-env name=DIR::"$(echo "${TAG}" | tr -d v | cut -d. -f-2)"
+        run: echo ::set-env name=DIR::"$(echo "$TAG" | tr -d v | cut -d. -f-2)"
 
-      ## Set optional ${VARIANT} of the software being built
+      ## Set optional $VARIANT of the software being built
       #   NOTE: `-` prepended to TAG helps to deal with `cut` ignoring `-f` when no matches for `-d` are found.
       - name: Set VARIANT (env var)
-        run: echo ::set-env name=VARIANT::"$(echo "-${TAG}" | cut -d- -f3- | cut -d+ -f1)"
+        run: echo ::set-env name=VARIANT::"$(echo "-$TAG" | cut -d- -f3- | cut -d+ -f1)"
 
-      ## Set ${BUILD} number out of the pushed git-tag
+      ## Set $BUILD number out of the pushed git-tag
       #   fmt:  build<N>
       #   NOTE: Fails if BUILD tag was not set
       - name: Set BUILD (env var)
         run: |
-          BUILD="$(echo "+${TAG}" | cut -d+ -f3)"
-          if [[ -z "${BUILD}" ]]; then
+          BUILD="$(echo "+$TAG" | cut -d+ -f3)"
+          if [[ -z "$BUILD" ]]; then
             echo "ERR '+build<N>' must be appended to the git tag"
             exit 1
           fi
-          echo ::set-env name=BUILD::"${BUILD}"
+          echo ::set-env name=BUILD::"$BUILD"
 
       - name: Set GOARCH & GOARM (env vars)
         if: matrix.arch != 'amd64'
         run: |
           GOARCH="$(echo "${{matrix.arch}}" | grep -oE 'arm(64)?')"
-          echo ::set-env name=GOARCH::"${GOARCH}"
+          echo ::set-env name=GOARCH::"$GOARCH"
 
           GOARM="$(echo "${{matrix.arch}}" | grep arm32 | tail -c 2)"
-          echo ::set-env name=GOARM::"${GOARM}"
+          echo ::set-env name=GOARM::"$GOARM"
 
       - name: Print ENV VARs set above
         run: |
           printf "Git tag & arch processed:\n"
-          printf "    APP: %s\n"            "${APP}"
-          printf "   ARCH: %s (from %s)\n"  "${ARCH}" "${{matrix.arch}}"
-          printf "    TAG: %s\n"            "${TAG}"
-          printf "VARIANT: %s\n"            "${VARIANT}"
-          printf "    DIR: %s\n"            "${DIR}"
-          printf "  BUILD: %s\n"            "${BUILD}"
-          printf " GOARCH: %s\n"            "${GOARCH}"
-          printf "  GOARM: %s\n"            "${GOARM}"
+          printf "    APP: %s\n"            "$APP"
+          printf "   ARCH: %s (from %s)\n"  "$ARCH" "${{matrix.arch}}"
+          printf "    TAG: %s\n"            "$TAG"
+          printf "VARIANT: %s\n"            "$VARIANT"
+          printf "    DIR: %s\n"            "$DIR"
+          printf "  BUILD: %s\n"            "$BUILD"
+          printf " GOARCH: %s\n"            "$GOARCH"
+          printf "  GOARM: %s\n"            "$GOARM"
 
       - name: Apply variant patch (if any)
         if: env.VARIANT != ''
-        run: (cd "${DIR}/"  &&  patch < variant-${VARIANT}.patch)
+        run: (cd "$DIR/"  &&  patch < variant-$VARIANT.patch)
 
       - name: Build lnd
         run: >
-          docker build --no-cache "${DIR}/"
-          --build-arg "ARCH=${ARCH}"
-          --build-arg "GOARCH=${GOARCH}"
-          --build-arg "GOARM=${GOARM}"
+          docker build --no-cache "$DIR/"
+          --build-arg "ARCH=$ARCH"
+          --build-arg "GOARCH=$GOARCH"
+          --build-arg "GOARM=$GOARM"
           --label     arch="${{matrix.arch}}"
           --label     commit="${{github.sha}}"
-          --label     git-tag="${TAG}"
+          --label     git-tag="$TAG"
           --label     guilty="${{github.actor}}"
           --label     repo-url="${{github.repositoryUrl}}"
-          --label     variant="${VARIANT}"
-          --tag       "${APP}:${{matrix.arch}}"
+          --label     variant="$VARIANT"
+          --tag       "$APP:${{matrix.arch}}"
 
       - name: Show built image details
-        run: docker images "${APP}"
+        run: docker images "$APP"
 
       - name: Save image to a .tgz file
         run: |
           mkdir -p image/
-          docker save "${APP}:${{matrix.arch}}" | gzip > "image/docker-${APP}-${TAG}-${{matrix.arch}}.tgz"
+          docker save "$APP:${{matrix.arch}}" | gzip > "image/docker-$APP-$TAG-${{matrix.arch}}.tgz"
 
       - name: Print sha256sum of produced Docker image
         run: sha256sum image/*
@@ -128,15 +128,15 @@ jobs:
       - name: Extract binaries from the built image
         run: |
           mkdir -p binaries/
-          ID=$(docker create "${APP}:${{matrix.arch}}")
-          docker cp  "${ID}:/usr/local/bin/${APP}"  binaries/
-          docker cp  "${ID}:/usr/local/bin/lncli"   binaries/
-          docker rm  "${ID}"
+          ID=$(docker create "$APP:${{matrix.arch}}")
+          docker cp  "$ID:/usr/local/bin/$APP"    binaries/
+          docker cp  "$ID:/usr/local/bin/lncli"   binaries/
+          docker rm  "$ID"
 
           # Compress each binary separately
           for file in binaries/*; do
-            gzip "${file}"
-            mv "${file}.gz" "${file}-${TAG}-${{matrix.arch}}.gz"
+            gzip "$file"
+            mv "$file.gz" "$file-$TAG-${{matrix.arch}}.gz"
           done
 
       - name: Print sha256sum of extracted binaries
@@ -168,31 +168,31 @@ jobs:
         run: sha256sum docker-images/*
 
       - name: Register self-compiled qemu
-        run: docker run --rm --privileged "meedamian/simple-qemu:${QEMU_VERSION}" -p yes
+        run: docker run --rm --privileged "meedamian/simple-qemu:$QEMU_VERSION" -p yes
 
       - name: Load all images locally
         run: ls -d docker-images/* | xargs -I %  docker load -i "%"
 
       - name: List all tagged images
-        run: docker images "${APP}"
+        run: docker images "$APP"
 
       - name: Run sanity checks
         env:
           DIR: /usr/local/bin
         run: |
-          for tag in $(docker images "${APP}" --format "{{.Tag}}"); do
-            echo
-            echo "~~~~~ ${APP}:${tag} ~~~~~"
-            docker inspect "${APP}:${tag}" | jq '.'
+          for tag in $(docker images "$APP" --format "{{.Tag}}"); do
+            echo ""
+            echo "~~~~~ $APP:$tag ~~~~~"
+            docker inspect "$APP:$tag" | jq '.'
 
-            docker run --rm                         "${APP}:${tag}" --version
-            docker run --rm --entrypoint=lncli      "${APP}:${tag}" --version
+            docker run --rm                         "$APP:$tag" --version
+            docker run --rm --entrypoint=lncli      "$APP:$tag" --version
 
-            docker run --rm --entrypoint=uname      "${APP}:${tag}" -a
-            docker run --rm --entrypoint=cat        "${APP}:${tag}" /etc/os-release
-            docker run --rm --entrypoint=sha256sum  "${APP}:${tag}" "${DIR}/lnd" "${DIR}/lncli"
+            docker run --rm --entrypoint=uname      "$APP:$tag" -a
+            docker run --rm --entrypoint=cat        "$APP:$tag" /etc/os-release
+            docker run --rm --entrypoint=sha256sum  "$APP:$tag" "$DIR/lnd" "$DIR/lncli"
 
-            docker run --rm --entrypoint=sh -u=root "${APP}:${tag}" -c "apk add --no-cache file && file ${DIR}/${APP} ${DIR}/lncli"
+            docker run --rm --entrypoint=sh -u=root "$APP:$tag" -c "apk add --no-cache file && file $DIR/$APP $DIR/lncli"
           done
 
 
@@ -209,25 +209,25 @@ jobs:
           echo ::set-env name=DOCKER_USER::"${GITHUB_ACTOR,,}"
 
           SLUG="$(echo ${GITHUB_REPOSITORY,,} | sed 's/docker-//')"
-          echo ::set-env name=SLUG::"${SLUG}"
+          echo ::set-env name=SLUG::"$SLUG"
 
-          echo ::set-env name=APP::"$(echo "${SLUG}" | awk -F/ '{print $NF}')"
+          echo ::set-env name=APP::"$(echo "$SLUG" | awk -F/ '{print $NF}')"
 
-          TAG="$(echo "${GITHUB_REF}" | grep 'refs/tags/' | awk -F/ '{print $NF}')"
-          echo ::set-env name=TAG::"${TAG}"
+          TAG="$(echo "$GITHUB_REF" | grep 'refs/tags/' | awk -F/ '{print $NF}')"
+          echo ::set-env name=TAG::"$TAG"
 
-          echo ::set-env name=VERSION::"$(echo "${TAG}" | cut -d+ -f1)"
-          echo ::set-env name=BUILD::"$(echo "+${TAG}" | cut -d+ -f3)"
+          echo ::set-env name=VERSION::"$(echo "$TAG" | cut -d+ -f1)"
+          echo ::set-env name=BUILD::"$(echo "+$TAG" | cut -d+ -f3)"
 
       - name: Print just set ENV VARs
         run: |
           printf "Just set env vars:\n"
-          printf "   USER: %s\n"  "${DOCKER_USER}"
-          printf "    TAG: %s\n"  "${TAG}"
-          printf "   SLUG: %s\n"  "${SLUG}"
-          printf "    APP: %s\n"  "${APP}"
-          printf "VERSION: %s\n"  "${VERSION}"
-          printf "  BUILD: %s\n"  "${BUILD}"
+          printf "   USER: %s\n"  "$DOCKER_USER"
+          printf "    TAG: %s\n"  "$TAG"
+          printf "   SLUG: %s\n"  "$SLUG"
+          printf "    APP: %s\n"  "$APP"
+          printf "VERSION: %s\n"  "$VERSION"
+          printf "  BUILD: %s\n"  "$BUILD"
 
       - name: Enable manifests & print Docker version
         run: |
@@ -250,44 +250,44 @@ jobs:
       # No short tags.  lnd releases are quite chaotic, it's better to no provide convenience that can easily backfire.
       - name: Version-tag all images
         run: |
-          for arch in $(docker images "${APP}" --format "{{.Tag}}"); do
-            docker tag  "${APP}:${arch}"  "${SLUG}:${VERSION}-${arch}-${BUILD}"
-            docker tag  "${APP}:${arch}"  "${SLUG}:${VERSION}-${arch}"
+          for arch in $(docker images "$APP" --format "{{.Tag}}"); do
+            docker tag  "$APP:$arch"  "$SLUG:$VERSION-$arch-$BUILD"
+            docker tag  "$APP:$arch"  "$SLUG:$VERSION-$arch"
           done
 
       - name: List all tagged images
-        run: docker images "${SLUG}"
+        run: docker images "$SLUG"
 
       - name: Login to Docker Hub
         run: |
           echo "Logging in as ${DOCKER_USER}…"
-          echo "${{secrets.DOCKER_TOKEN}}" | docker login -u="${DOCKER_USER}" --password-stdin
+          echo "${{secrets.DOCKER_TOKEN}}" | docker login -u="$DOCKER_USER" --password-stdin
 
       - name: Push all images
-        run: docker images "${SLUG}" --format "{{.Repository}}:{{.Tag}}" | xargs -I %  docker push %
+        run: docker images "$SLUG" --format "{{.Repository}}:{{.Tag}}" | xargs -I %  docker push %
 
       - name: Create manifest
         run: >
-          docker -D manifest create  "${SLUG}:${VERSION}"  \
-            "${SLUG}:${VERSION}-amd64" \
-            "${SLUG}:${VERSION}-arm64" \
-            "${SLUG}:${VERSION}-arm32v6" \
-            "${SLUG}:${VERSION}-arm32v7"
+          docker -D manifest create  "$SLUG:$VERSION"  \
+            "$SLUG:$VERSION-amd64" \
+            "$SLUG:$VERSION-arm64" \
+            "$SLUG:$VERSION-arm32v6" \
+            "$SLUG:$VERSION-arm32v7"
 
       - name: Annotate arm32v6
-        run: docker manifest annotate "${SLUG}:${VERSION}" "${SLUG}:${VERSION}-arm32v6"  --os linux  --arch arm  --variant v6
+        run: docker manifest annotate "$SLUG:$VERSION" "$SLUG:$VERSION-arm32v6"  --os linux  --arch arm  --variant v6
 
       - name: Annotate arm32v7
-        run: docker manifest annotate "${SLUG}:${VERSION}" "${SLUG}:${VERSION}-arm32v7"  --os linux  --arch arm  --variant v7
+        run: docker manifest annotate "$SLUG:$VERSION" "$SLUG:$VERSION-arm32v7"  --os linux  --arch arm  --variant v7
 
       - name: Annotate arm64v8
-        run: docker manifest annotate "${SLUG}:${VERSION}" "${SLUG}:${VERSION}-arm64"   --os linux  --arch arm64  --variant v8
+        run: docker manifest annotate "$SLUG:$VERSION" "$SLUG:$VERSION-arm64"   --os linux  --arch arm64  --variant v8
 
       - name: Print manifest's details
-        run: docker manifest inspect "${SLUG}:${VERSION}" | jq '.'
+        run: docker manifest inspect "$SLUG:$VERSION" | jq '.'
 
       - name: Push manifest
-        run: docker manifest push "${SLUG}:${VERSION}"
+        run: docker manifest push "$SLUG:$VERSION"
 
 
   github-release:
