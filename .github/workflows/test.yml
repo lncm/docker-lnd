@@ -71,13 +71,13 @@ jobs:
             ENTRYPOINT="${1:-$APP}"; shift;
             ARGS=${*:-"--version"}
 
-            printf "\n  $ %s %s\n  %s\n" \
+            printf "$ %s %s\n%s\n\n" \
               "$ENTRYPOINT"  "$ARGS" \
               "$(docker run --rm  --entrypoint "$ENTRYPOINT"  "$APP"  $ARGS)"
           }
 
-          # TODO: Validate contents of output JSON
           docker inspect "$APP" | jq '.'
+          echo ""
 
           run lnd
           run lncli
