@@ -46,7 +46,7 @@ jobs:
           ARCH: ${{ matrix.arch }}
         run: |
           GOARCH="${ARCH%32v?}"
-          echo ::set-env name=GOARCH::"${ARCH%v8}"
+          echo ::set-env name=GOARCH::"${GOARCH%v8}"
           echo ::set-env name=GOARM::"$(echo "$ARCH" | sed -n 's|^arm32v\([6-7]\)$|\1|p')"
 
       - name: Build ${{ env.APP }}:${{ matrix.ver }}-${{ matrix.arch }}
