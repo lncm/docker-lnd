@@ -14,18 +14,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch:
-          - amd64
-          - arm32v6
-          - arm32v7
-          - arm64v8
-
         ver:
           - 0.5
           - 0.6
           - 0.7
           - 0.8
           - 0.9
+
+        arch:
+          - amd64
+          - arm32v6
+          - arm32v7
+          - arm64v8
 
     env:
       DOCKER_BUILDKIT: 1
