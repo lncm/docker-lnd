@@ -38,13 +38,15 @@ jobs:
       - name: Verify all patches apply cleanly
         run: ./scripts/verify-patches.sh "${{ matrix.ver }}"
 
-      # NOTE: for GOARCH: remove "v8", "32v6", or "32v7" suffixes, if present
+      # NOTE: for GOARCH: remove "v8", or "32v?" suffixes, if present
+      # NOTE: for GOARM: extract last digit if matches "arm32v"
       - name: Setup environment
         if: matrix.arch != 'amd64'
         env:
           ARCH: ${{ matrix.arch }}
         run: |
-          echo ::set-env name=GOARCH::"${ARCH%(32v(6|7)|v8)}"
+          GOARCH="${ARCH%32v?}"
+          echo ::set-env name=GOARCH::"${ARCH%v8}"
           echo ::set-env name=GOARM::"$(echo "$ARCH" | sed -n 's|^arm32v\([6-7]\)$|\1|p')"
 
       - name: Build ${{ env.APP }}:${{ matrix.ver }}-${{ matrix.arch }}
