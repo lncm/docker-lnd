@@ -22,18 +22,13 @@ jobs:
       APP: lnd
 
     steps:
-      - uses: actions/checkout@v1.0.0
+      - uses: actions/checkout@v2
 
       ## Set full name of a git-$TAG
       #   fmt:  vX.Y.Z[+build<N>]
-      #   NOTE: Fails if TAG is not found
       - name: Set TAG (env var)
         run: |
           TAG="$(echo "$GITHUB_REF" | grep 'refs/tags/' | awk -F/ '{print $NF}')"
-          if [[ -z "$TAG" ]]; then
-            echo "This action has to be run on a git-tag push"
-            exit 1
-          fi
           echo ::set-env name=TAG::"$TAG"
 
       ## Set target $ARCH-itecture for Docker Image built in this job.  Used in `final` stage as: `FROM $ARCH/alpine:…`
@@ -50,7 +45,7 @@ jobs:
       ## Set $DIR for the minor-version.  Extract it from $TAG
       #   fmt: 0.X
       - name: Set DIR (env var)
-        run: echo ::set-env name=DIR::"$(echo "$TAG" | tr -d v | cut -d. -f-2)"
+        run: echo ::set-env name=DIR::"$(echo "${TAG#v}" | cut -d. -f-2)"
 
       ## Set optional $VARIANT of the software being built
       #   NOTE: `-` prepended to TAG helps to deal with `cut` ignoring `-f` when no matches for `-d` are found.
@@ -202,7 +197,7 @@ jobs:
     runs-on: ubuntu-18.04
     needs: test
     steps:
-      - uses: actions/checkout@v1.0.0
+      - uses: actions/checkout@v2
 
       - name: Setup environment
         run: |
