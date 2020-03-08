@@ -23,10 +23,18 @@ fi
 DIR="$(echo "$VERSION" | tr -d v | cut -d. -f-2)"
 
 # If variant is provided, verify it exists
-if [[ -n "$VARIANT" ]] && [[ ! -f "$DIR/variant-$VARIANT.patch" ]]; then
-  >&2 printf "\nERR: missing variant:  variant passed as the 2nd argument, but corresponding patch file is not present.  Try:\n"
-  >&2 printf "\t./%s  %s  %s\n\n"   "$(basename "$0")"  "v0.8.1"  "monitoring"
-  exit 1
+if [[ -n "$VARIANT" ]]; then
+  if [[ ! -f "$DIR/variant-$VARIANT.patch" ]]; then
+    >&2 printf "\nERR: variant missing:  variant passed as the 2nd argument, but corresponding patch file is not present.\n"
+    >&2 printf "\tMake sure that './%s/variant-%s.patch' file exists.\n\n" "$DIR" "$VARIANT"
+    exit 1
+  fi
+
+  if ! patch --dry-run --quiet -d "$DIR" < "$DIR/variant-$VARIANT.patch"; then
+    >&2 printf "\nERR: variant broken:  specified variant: '%s' does not apply cleanly\n" "$VARIANT"
+    >&2 printf "\tFix the errors, and run this command again.\n\n"
+    exit 1
+  fi
 fi
 
 # Verify there's no uncommitted changes in the working dir
