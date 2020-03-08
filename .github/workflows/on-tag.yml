@@ -206,8 +206,6 @@ jobs:
 
       - name: Setup environment
         run: |
-          echo ::set-env name=DOCKER_USER::"${GITHUB_ACTOR,,}"
-
           SLUG="$(echo ${GITHUB_REPOSITORY,,} | sed 's/docker-//')"
           echo ::set-env name=SLUG::"$SLUG"
 
@@ -222,7 +220,6 @@ jobs:
       - name: Print just set ENV VARs
         run: |
           printf "Just set env vars:\n"
-          printf "   USER: %s\n"  "$DOCKER_USER"
           printf "    TAG: %s\n"  "$TAG"
           printf "   SLUG: %s\n"  "$SLUG"
           printf "    APP: %s\n"  "$APP"
@@ -259,6 +256,8 @@ jobs:
         run: docker images "$SLUG"
 
       - name: Login to Docker Hub
+        env:
+          DOCKER_USER: meedamian
         run: |
           echo "Logging in as ${DOCKER_USER}…"
           echo "${{secrets.DOCKER_TOKEN}}" | docker login -u="$DOCKER_USER" --password-stdin
