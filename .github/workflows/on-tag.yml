@@ -13,77 +13,56 @@ jobs:
       matrix:
         arch:
           - amd64
-          - arm64
           - arm32v6
           - arm32v7
+          - arm64v8
 
     env:
-      DOCKER_BUILDKIT: 1
       APP: lnd
+      DOCKER_BUILDKIT: 1
 
     steps:
       - uses: actions/checkout@v2
 
-      ## Set full name of a git-$TAG
-      #   fmt:  vX.Y.Z[+build<N>]
-      - name: Set TAG (env var)
+      # Setup environment
+      # TAG  => vX.Y.Z[+build<N>]
+      # ARCH => amd64|arm32v6|arm32v8|arm64v8
+      # DIR  => X.Y
+      - name: Setup environment
         run: |
-          TAG="$(echo "$GITHUB_REF" | grep 'refs/tags/' | awk -F/ '{print $NF}')"
-          echo ::set-env name=TAG::"$TAG"
-
-      ## Set target $ARCH-itecture for Docker Image built in this job.  Used in `final` stage as: `FROM $ARCH/alpine:…`
-      #   fmt:  amd64|arm32v6|arm32v8|arm64v8
-      #   NOTE: Replace `arm64` with `arm64v8`
-      - name: Set ARCH (env var)
-        run: |
-          ARCH=${{matrix.arch}}
-          if [[ "${{matrix.arch}}" == "arm64" ]]; then
-            ARCH="arm64v8"
-          fi
-          echo ::set-env name=ARCH::"$ARCH"
-
-      ## Set $DIR for the minor-version.  Extract it from $TAG
-      #   fmt: 0.X
-      - name: Set DIR (env var)
-        run: echo ::set-env name=DIR::"$(echo "${TAG#v}" | cut -d. -f-2)"
-
-      ## Set optional $VARIANT of the software being built
-      #   NOTE: `-` prepended to TAG helps to deal with `cut` ignoring `-f` when no matches for `-d` are found.
-      - name: Set VARIANT (env var)
-        run: echo ::set-env name=VARIANT::"$(echo "-$TAG" | cut -d- -f3- | cut -d+ -f1)"
-
-      ## Set $BUILD number out of the pushed git-tag
-      #   fmt:  build<N>
-      #   NOTE: Fails if BUILD tag was not set
-      - name: Set BUILD (env var)
-        run: |
-          BUILD="$(echo "+$TAG" | cut -d+ -f3)"
-          if [[ -z "$BUILD" ]]; then
-            echo "ERR '+build<N>' must be appended to the git tag"
+          if ! echo "$GITHUB_REF" | grep -qE '^refs/tags/v(.?[0-9]+){3,4}(-[-a-z]+)?\+build[0-9]+$'; then
+            echo "ERR: TAG must be in format: vX.Y.Z[.P][-VARIANT]+buildNUMBER"
             exit 1
           fi
-          echo ::set-env name=BUILD::"$BUILD"
 
-      - name: Set GOARCH & GOARM (env vars)
+          TAG="$(echo "$GITHUB_REFS" | sed -nE 's|^refs/tags/(.*)$|\1|p')"
+          echo ::set-env name=TAG::"$TAG"
+
+          echo ::set-env name=VARIANT::"$(echo "$TAG" | sed -nE 's|^[^+-]+-?([^+]+)?\+.*$|\1|p')"
+          echo ::set-env name=BUILD::"$(echo "$TAG" | sed -nE 's|^[^+]+\+build([0-9]+)$|\1|p')"
+          echo ::set-env name=DIR::"$(echo "${TAG#v}" | cut -d. -f-2)"
+
+      # GOARCH => arm|arm64
+      # GOARM  => 6|7
+      - name: Setup Go environment
         if: matrix.arch != 'amd64'
+        env:
+          ARCH: ${{ matrix.arch }}
         run: |
-          GOARCH="$(echo "${{matrix.arch}}" | grep -oE 'arm(64)?')"
-          echo ::set-env name=GOARCH::"$GOARCH"
-
-          GOARM="$(echo "${{matrix.arch}}" | grep arm32 | tail -c 2)"
-          echo ::set-env name=GOARM::"$GOARM"
+          GOARCH="${ARCH%32v?}"
+          echo ::set-env name=GOARCH::"${GOARCH%v8}"
+          echo ::set-env name=GOARM::"$(echo "$ARCH" | sed -En 's|^arm32v([6-7])$|\1|p')"
 
       - name: Print ENV VARs set above
         run: |
-          printf "Git tag & arch processed:\n"
-          printf "    APP: %s\n"            "$APP"
-          printf "   ARCH: %s (from %s)\n"  "$ARCH" "${{matrix.arch}}"
-          printf "    TAG: %s\n"            "$TAG"
-          printf "VARIANT: %s\n"            "$VARIANT"
-          printf "    DIR: %s\n"            "$DIR"
-          printf "  BUILD: %s\n"            "$BUILD"
-          printf " GOARCH: %s\n"            "$GOARCH"
-          printf "  GOARM: %s\n"            "$GOARM"
+          printf "    APP: %s\n"  "$APP"
+          printf "   ARCH: %s\n"  "${{ matrix.arch }}"
+          printf "    TAG: %s\n"  "$TAG"
+          printf "VARIANT: %s\n"  "$VARIANT"
+          printf "    DIR: %s\n"  "$DIR"
+          printf "  BUILD: %s\n"  "$BUILD"
+          printf " GOARCH: %s\n"  "$GOARCH"
+          printf "  GOARM: %s\n"  "$GOARM"
 
       - name: Apply variant patch (if any)
         if: env.VARIANT != ''
@@ -92,24 +71,55 @@ jobs:
       - name: Build lnd
         run: >
           docker build --no-cache "$DIR/"
-          --build-arg "ARCH=$ARCH"
+          --build-arg "ARCH=${{ matrix.arch }}"
           --build-arg "GOARCH=$GOARCH"
           --build-arg "GOARM=$GOARM"
-          --label     arch="${{matrix.arch}}"
-          --label     commit="${{github.sha}}"
+          --label     arch="${{ matrix.arch }}"
+          --label     commit="${{ github.sha }}"
           --label     git-tag="$TAG"
-          --label     guilty="${{github.actor}}"
-          --label     repo-url="${{github.repositoryUrl}}"
+          --label     guilty="${{ github.actor }}"
+          --label     repo-url="${{ github.repositoryUrl }}"
           --label     variant="$VARIANT"
-          --tag       "$APP:${{matrix.arch}}"
+          --tag       "$APP:${{ matrix.arch }}"
 
       - name: Show built image details
         run: docker images "$APP"
 
+      - name: Register self-compiled qemu
+        if: matrix.arch != 'amd64'
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: docker run --rm --privileged "meedamian/simple-qemu:$QEMU_VERSION-${ARCH%v8}" -p yes
+
+      - name: Run sanity checks
+        env:
+          DIR: /usr/local/bin
+        run: |
+          run() {
+            ENTRYPOINT="${1:-$APP}"; shift;
+            ARGS=${*:-"--version"}
+
+            printf "$ %s %s\n" "$ENTRYPOINT" "$ARGS"
+            docker run --rm  --entrypoint "$ENTRYPOINT"  "$APP:${{ matrix.arch }}"  $ARGS
+            printf "\n"
+          }
+
+          docker inspect "$APP:${{ matrix.arch }}" | jq '.'
+          printf "\n"
+
+          run lnd
+          run lncli
+
+          run uname -a
+          run cat /etc/os-release
+          run sha256sum "$DIR/lnd" "$DIR/lncli"
+
+          docker run --rm --entrypoint=sh -u=root "$APP:${{ matrix.arch }}" -c "apk add --no-cache file && file $DIR/lnd $DIR/lncli"
+
       - name: Save image to a .tgz file
         run: |
           mkdir -p image/
-          docker save "$APP:${{matrix.arch}}" | gzip > "image/docker-$APP-$TAG-${{matrix.arch}}.tgz"
+          docker save "$APP:${{ matrix.arch }}" | gzip > "image/docker-$APP-$TAG-${{ matrix.arch }}.tgz"
 
       - name: Print sha256sum of produced Docker image
         run: sha256sum image/*
@@ -123,15 +133,15 @@ jobs:
       - name: Extract binaries from the built image
         run: |
           mkdir -p binaries/
-          ID=$(docker create "$APP:${{matrix.arch}}")
-          docker cp  "$ID:/usr/local/bin/$APP"    binaries/
+          ID=$(docker create "$APP:${{ matrix.arch }}")
+          docker cp  "$ID:/usr/local/bin/lnd"     binaries/
           docker cp  "$ID:/usr/local/bin/lncli"   binaries/
           docker rm  "$ID"
 
           # Compress each binary separately
           for file in binaries/*; do
             gzip "$file"
-            mv "$file.gz" "$file-$TAG-${{matrix.arch}}.gz"
+            mv "$file.gz" "$file-$TAG-${{ matrix.arch }}.gz"
           done
 
       - name: Print sha256sum of extracted binaries
@@ -144,77 +154,26 @@ jobs:
           path: binaries/
 
 
-  test:
-    name: Check sanity of images
+  docker-hub:
+    name: Tag & deploy to Docker Hub.  Only after successful build
+
     runs-on: ubuntu-18.04
     needs: build
-
-    env:
-      QEMU_VERSION: v4.2.0
-      APP: lnd
-
     steps:
-      - name: Download build artifact
-        uses: actions/download-artifact@v1.0.0
-        with:
-          name: docker-images
-
-      - name: Print sha256sum of all Docker images
-        run: sha256sum docker-images/*
-
-      - name: Register self-compiled qemu
-        run: docker run --rm --privileged "meedamian/simple-qemu:$QEMU_VERSION" -p yes
-
-      - name: Load all images locally
-        run: ls -d docker-images/* | xargs -I %  docker load -i "%"
-
-      - name: List all tagged images
-        run: docker images "$APP"
-
-      - name: Run sanity checks
-        env:
-          DIR: /usr/local/bin
-        run: |
-          for tag in $(docker images "$APP" --format "{{.Tag}}"); do
-            echo ""
-            echo "~~~~~ $APP:$tag ~~~~~"
-            docker inspect "$APP:$tag" | jq '.'
-
-            docker run --rm                         "$APP:$tag" --version
-            docker run --rm --entrypoint=lncli      "$APP:$tag" --version
-
-            docker run --rm --entrypoint=uname      "$APP:$tag" -a
-            docker run --rm --entrypoint=cat        "$APP:$tag" /etc/os-release
-            docker run --rm --entrypoint=sha256sum  "$APP:$tag" "$DIR/lnd" "$DIR/lncli"
-
-            docker run --rm --entrypoint=sh -u=root "$APP:$tag" -c "apk add --no-cache file && file $DIR/$APP $DIR/lncli"
-          done
-
-
-  docker-hub:
-    name: Tag & deploy to Docker Hub.  Only after successful build & test
-
-    runs-on: ubuntu-18.04
-    needs: test
-    steps:
-      - uses: actions/checkout@v2
-
       - name: Setup environment
         run: |
           SLUG="$(echo ${GITHUB_REPOSITORY,,} | sed 's/docker-//')"
           echo ::set-env name=SLUG::"$SLUG"
-
           echo ::set-env name=APP::"$(echo "$SLUG" | awk -F/ '{print $NF}')"
 
-          TAG="$(echo "$GITHUB_REF" | grep 'refs/tags/' | awk -F/ '{print $NF}')"
+          TAG="$(echo "$GITHUB_REFS" | sed -nE 's|^refs/tags/(.*)$|\1|p')"
           echo ::set-env name=TAG::"$TAG"
 
-          echo ::set-env name=VERSION::"$(echo "$TAG" | cut -d+ -f1)"
-          echo ::set-env name=BUILD::"$(echo "+$TAG" | cut -d+ -f3)"
+          echo ::set-env name=VERSION::"$(echo "$TAG" | sed -nE 's|^([^+-]+).*$|\1|p')"
+          echo ::set-env name=BUILD::"$(echo "$TAG" | sed -nE 's|^[^+]+\+build([0-9]+)$|\1|p')"
 
       - name: Print just set ENV VARs
         run: |
-          printf "Just set env vars:\n"
           printf "    TAG: %s\n"  "$TAG"
           printf "   SLUG: %s\n"  "$SLUG"
           printf "    APP: %s\n"  "$APP"
@@ -237,7 +196,7 @@ jobs:
         run: sha256sum docker-images/*
 
       - name: Load images locally
-        run: ls -d docker-images/* | xargs -I %  docker load -i "%"
+        run: find docker-images -exec docker load -i "{}" \;
 
       # No short tags.  lnd releases are quite chaotic, it's better to no provide convenience that can easily backfire.
       - name: Version-tag all images
@@ -255,7 +214,7 @@ jobs:
           DOCKER_USER: meedamian
         run: |
           echo "Logging in as ${DOCKER_USER}…"
-          echo "${{secrets.DOCKER_TOKEN}}" | docker login -u="$DOCKER_USER" --password-stdin
+          echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u="$DOCKER_USER" --password-stdin
 
       - name: Push all images
         run: docker images "$SLUG" --format "{{.Repository}}:{{.Tag}}" | xargs -I %  docker push %
@@ -264,20 +223,20 @@ jobs:
         run: >
           docker -D manifest create  "$SLUG:$VERSION"  \
             "$SLUG:$VERSION-amd64" \
-            "$SLUG:$VERSION-arm64" \
             "$SLUG:$VERSION-arm32v6" \
-            "$SLUG:$VERSION-arm32v7"
+            "$SLUG:$VERSION-arm32v7" \
+            "$SLUG:$VERSION-arm64v8"
 
       - name: Annotate arm32v6
-        run: docker manifest annotate "$SLUG:$VERSION" "$SLUG:$VERSION-arm32v6"  --os linux  --arch arm  --variant v6
+        run: docker manifest annotate "$SLUG:$VERSION" "$SLUG:$VERSION-arm32v6"  --os linux  --arch arm    --variant v6
 
       - name: Annotate arm32v7
-        run: docker manifest annotate "$SLUG:$VERSION" "$SLUG:$VERSION-arm32v7"  --os linux  --arch arm  --variant v7
+        run: docker manifest annotate "$SLUG:$VERSION" "$SLUG:$VERSION-arm32v7"  --os linux  --arch arm    --variant v7
 
       - name: Annotate arm64v8
-        run: docker manifest annotate "$SLUG:$VERSION" "$SLUG:$VERSION-arm64"   --os linux  --arch arm64  --variant v8
+        run: docker manifest annotate "$SLUG:$VERSION" "$SLUG:$VERSION-arm64v8"  --os linux  --arch arm64  --variant v8
 
-      - name: Print manifest's details
+      - name: Print manifest details
         run: docker manifest inspect "$SLUG:$VERSION" | jq '.'
 
       - name: Push manifest
@@ -287,15 +246,13 @@ jobs:
   github-release:
     name: Create Github Release. Only after successful build of a pushed git tag
     runs-on: ubuntu-18.04
-    needs: test
+    needs: build
     steps:
       - name: Setup environment
         run: |
-          VERSION="$(echo "$GITHUB_REF" | grep 'refs/tags/' | awk -F/ '{print $NF}' | cut -d+ -f1)"
-          echo ::set-env name=VERSION::"$VERSION"
-
-          LND_VERSION="$(echo "$VERSION" | cut -d- -f1)-beta"
-          echo ::set-env name=LND_VERSION::"$LND_VERSION"
+          TAG="$(echo "$GITHUB_REFS" | sed -nE 's|^refs/tags/(.*)$|\1|p')"
+          echo ::set-env name=TAG_NAME::"$(echo "$TAG" | cut -d+ -f1)"
+          echo ::set-env name=LND_VERSION::"$(echo "$TAG_NAME" | cut -d- -f1)-beta"
 
       - name: Download binaries from build artifacts
         uses: actions/download-artifact@v1.0.0
@@ -314,9 +271,9 @@ jobs:
       - name: Upload binaries to Github Release
         uses: meeDamian/github-release@v1.0.1
         with:
-          token: ${{secrets.GITHUB_TOKEN}}
-          name: ${{env.VERSION}}
-          body: "This release packages `lnd` version released here: https://github.com/lightningnetwork/lnd/releases/tag/${{env.LND_VERSION}}"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          name: ${{ env.TAG_NAME }}
+          body: "This release packages `lnd` version released here: https://github.com/lightningnetwork/lnd/releases/tag/${{ env.LND_VERSION }}"
           prerelease: true
           gzip: false
           files: >

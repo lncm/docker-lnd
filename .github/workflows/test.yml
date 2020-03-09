@@ -38,9 +38,9 @@ jobs:
       - name: Verify all patches apply cleanly
         run: ./scripts/verify-patches.sh "${{ matrix.ver }}"
 
-      # NOTE: for GOARCH: remove "v8", or "32v?" suffixes, if present
-      # NOTE: for GOARM: extract last digit if matches "arm32v"
-      - name: Setup environment
+      # GOARCH => arm|arm64
+      # GOARM  => 6|7
+      - name: Setup Go environment
         if: matrix.arch != 'amd64'
         env:
           ARCH: ${{ matrix.arch }}
@@ -71,13 +71,13 @@ jobs:
             ENTRYPOINT="${1:-$APP}"; shift;
             ARGS=${*:-"--version"}
 
-            printf "$ %s %s\n%s\n\n" \
-              "$ENTRYPOINT"  "$ARGS" \
-              "$(docker run --rm  --entrypoint "$ENTRYPOINT"  "$APP"  $ARGS)"
+            printf "$ %s %s\n" "$ENTRYPOINT" "$ARGS"
+            docker run --rm  --entrypoint "$ENTRYPOINT"  "$APP"  $ARGS
+            printf "\n"
           }
 
           docker inspect "$APP" | jq '.'
-          echo ""
+          printf "\n"
 
           run lnd
           run lncli
