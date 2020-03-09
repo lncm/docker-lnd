@@ -25,8 +25,7 @@ jobs:
       - uses: actions/checkout@v2
 
       # Setup environment
-      # TAG  => vX.Y.Z[+build<N>]
-      # ARCH => amd64|arm32v6|arm32v8|arm64v8
+      # TAG  => vX.Y.Z[.P][-VARIANT]+build<BUILD>
       # DIR  => X.Y
       - name: Setup environment
         run: |
@@ -35,7 +34,7 @@ jobs:
             exit 1
           fi
 
-          TAG="$(echo "$GITHUB_REFS" | sed -nE 's|^refs/tags/(.*)$|\1|p')"
+          TAG="$(echo "$GITHUB_REF" | sed -nE 's|^refs/tags/(.*)$|\1|p')"
           echo ::set-env name=TAG::"$TAG"
 
           echo ::set-env name=VARIANT::"$(echo "$TAG" | sed -nE 's|^[^+-]+-?([^+]+)?\+.*$|\1|p')"
@@ -164,7 +163,7 @@ jobs:
           echo ::set-env name=SLUG::"$SLUG"
           echo ::set-env name=APP::"$(echo "$SLUG" | awk -F/ '{print $NF}')"
 
-          TAG="$(echo "$GITHUB_REFS" | sed -nE 's|^refs/tags/(.*)$|\1|p')"
+          TAG="$(echo "$GITHUB_REF" | sed -nE 's|^refs/tags/(.*)$|\1|p')"
           echo ::set-env name=TAG::"$TAG"
 
           echo ::set-env name=VERSION::"$(echo "$TAG" | sed -nE 's|^([^+-]+).*$|\1|p')"
@@ -248,7 +247,7 @@ jobs:
     steps:
       - name: Setup environment
         run: |
-          TAG="$(echo "$GITHUB_REFS" | sed -nE 's|^refs/tags/(.*)$|\1|p')"
+          TAG="$(echo "$GITHUB_REF" | sed -nE 's|^refs/tags/(.*)$|\1|p')"
           echo ::set-env name=TAG_NAME::"$(echo "$TAG" | cut -d+ -f1)"
           echo ::set-env name=LND_VERSION::"$(echo "$TAG_NAME" | cut -d- -f1)-beta"
 
