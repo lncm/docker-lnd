@@ -52,7 +52,7 @@ jobs:
       - name: Build ${{ env.APP }}
         run: >
           docker build --no-cache "${{ matrix.ver }}/"
-          --build-arg "ARCH=${{ env.ARCH }}"
+          --build-arg "ARCH=${{ matrix.arch }}"
           --build-arg "GOARCH=$GOARCH"
           --build-arg "GOARM=$GOARM"
           --tag       "$APP"
@@ -61,7 +61,10 @@ jobs:
         run: docker images "$APP"
 
       - name: Register self-compiled qemu
-        run: docker run --rm --privileged "meedamian/simple-qemu:$QEMU_VERSION" -p yes
+        if: matrix.arch != 'amd64'
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: docker run --rm --privileged "meedamian/simple-qemu:$QEMU_VERSION-${ARCH%v8}" -p yes
 
       - name: Run sanity checks
         env:
