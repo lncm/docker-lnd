@@ -62,9 +62,7 @@ jobs:
 
       - name: Register self-compiled qemu
         if: matrix.arch != 'amd64'
-        env:
-          ARCH: ${{ matrix.arch }}
-        run: docker run --rm --privileged "meedamian/simple-qemu:$QEMU_VERSION-${ARCH%v8}" -p yes
+        run: docker run --rm --privileged "meedamian/simple-qemu:$QEMU_VERSION" -p yes
 
       - name: Run sanity checks
         env:
