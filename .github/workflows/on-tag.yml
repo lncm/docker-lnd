@@ -176,6 +176,9 @@ jobs:
     runs-on: ubuntu-18.04
     needs: build
 
+    env:
+      DOCKER_CLI_EXPERIMENTAL: enabled
+
     steps:
       - name: Setup environment
         run: |
@@ -192,13 +195,6 @@ jobs:
           printf "   SLUG: %s\n"  "$SLUG"
           printf "VERSION: %s\n"  "$VERSION"
           printf "  BUILD: %s\n"  "$BUILD"
-
-      - name: Enable manifests & print Docker version
-        run: |
-          mkdir -p ~/.docker
-          echo '{ "experimental": "enabled" }' > ~/.docker/config.json
-          sudo systemctl restart docker
-          docker version
 
       - name: Download all build artifacts
         uses: actions/download-artifact@v1.0.0
