@@ -15,12 +15,12 @@ VARIANT=$2
 # Verify version to-be-released is provided
 if [[ -z "$VERSION" ]]; then
   >&2 printf "\nERR: version missing:  version needs to be passed as the first argument.  Try:\n"
-  >&2 printf "\t./%s  %s\n\n"   "$(basename "$0")"  "v0.8.1"
+  >&2 printf "\t./%s  %s\n\n"   "$(basename "$0")"  "v0.9.1"
   exit 1
 fi
 
 # Get directory
-DIR="$(echo "$VERSION" | tr -d v | cut -d. -f-2)"
+DIR="$(echo "${VERSION#v}" | cut -d. -f-2)"
 
 # If variant is provided, verify it exists
 if [[ -n "$VARIANT" ]]; then
@@ -51,19 +51,15 @@ fi
 git fetch --tags
 
 # Get last build number
-LAST=$(git tag | grep '+build' | sed 's|^.*build||' | sort -h | tail -n 1)
+LAST="$(git tag | grep '+build' | sed 's|^.*build||' | sort -h | tail -n 1)"
+
+LAST="${LAST:-0}"
 
 # Increment it
 ((LAST++))
 
 
-TAG="$VERSION"
-
-if [[ -n "$VARIANT" ]]; then
-  TAG="$TAG-$VARIANT"
-fi
-
-TAG="$TAG+build$LAST"
+TAG="$VERSION${VARIANT:+-$VARIANT}+build$LAST"
 
 
 printf "Creating tag: %s…\t" "$TAG"

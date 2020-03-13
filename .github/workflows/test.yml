@@ -1,5 +1,8 @@
 name: Build lnd on push, or PR to master
 
+env:
+  APP: lnd
+
 on:
   push:
     branches: [ 'master' ]
@@ -28,9 +31,8 @@ jobs:
           - arm64v8
 
     env:
-      APP: lnd
-      DOCKER_BUILDKIT: 1
       QEMU_VERSION: v4.2.0
+      DOCKER_BUILDKIT: 1
 
     steps:
       - uses: actions/checkout@v2
@@ -62,7 +64,9 @@ jobs:
 
       - name: Register self-compiled qemu
         if: matrix.arch != 'amd64'
-        run: docker run --rm --privileged "meedamian/simple-qemu:$QEMU_VERSION" -p yes
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: docker run --rm --privileged "meedamian/simple-qemu:$QEMU_VERSION-${ARCH%32v6}" -p yes
 
       - name: Run sanity checks
         env:
@@ -72,7 +76,7 @@ jobs:
             ENTRYPOINT="${1:-$APP}"; shift;
             ARGS=${*:-"--version"}
 
-            printf "$ %s %s\n" "$ENTRYPOINT" "$ARGS"
+            printf "\n$ %s %s\n" "$ENTRYPOINT" "$ARGS"
             docker run --rm  --entrypoint "$ENTRYPOINT"  "$APP"  $ARGS
             printf "\n"
           }
