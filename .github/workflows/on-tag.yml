@@ -9,7 +9,7 @@ env:
   #   \3 => ignore    (captures dot, and last number-group in version)
   #   \4 => VARIANT   VARIANT
   #   \5 => BUILD     N
-  FMT: '^refs/tags/((v(.?[0-9]+){3,4})-?([^+]+)?\+build([0-9]+))$'
+  TAG_FMT: '^refs/tags/((v(.?[0-9]+){3,4})-?([^+]+)?\+build([0-9]+))$'
 
 on:
   push:
@@ -88,12 +88,12 @@ jobs:
           --build-arg "ARCH=${{ matrix.arch }}"
           --build-arg "GOARCH=$GOARCH"
           --build-arg "GOARM=$GOARM"
-          --label     arch="${{ matrix.arch }}"
-          --label     commit="${{ github.sha }}"
-          --label     git-tag="$TAG"
-          --label     guilty="${{ github.actor }}"
-          --label     repo-url="${{ github.repositoryUrl }}"
-          --label     variant="$VARIANT"
+          --label     "arch=${{ matrix.arch }}"
+          --label     "commit=${{ github.sha }}"
+          --label     "git-tag=$TAG"
+          --label     "guilty=${{ github.actor }}"
+          --label     "repo-url=${{ github.repositoryUrl }}"
+          --label     "variant=$VARIANT"
           --tag       "$APP"
 
       - name: Show built image details
