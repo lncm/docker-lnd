@@ -9,7 +9,7 @@ set -eo pipefail
 dir=${1:-0.*}
 
 # shellcheck disable=SC2086
-if ! ls ${dir}/variant-*.patch &>/dev/null; then
+if ! ls $dir/variant-*.patch &>/dev/null; then
     echo "No variants found. Skipping."
     exit 0
 fi
