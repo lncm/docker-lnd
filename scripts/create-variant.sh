@@ -3,7 +3,7 @@
 set -eo pipefail
 
 #
-## This scripts turns all uncommited changes in a minor-version repository into a `*.patch` file that can be used as a variant.
+## This scripts turns all uncommitted changes in a minor-version repository into a `*.patch` file that can be used as a variant.
 #
 
 SCRIPT_NAME=$(basename "$0")
@@ -14,12 +14,14 @@ main() {
 
   # Make sure required arguments are passed to the script
   if [[ -z "$dir" ]] || [[ -z "$name" ]]; then
-    printf >&2 "./%s: <directory> <variant-name>\n" "$SCRIPT_NAME" && exit 1
+    >&2 printf "./%s: <directory> <variant-name>\n" "$SCRIPT_NAME"
+    exit 1
   fi
 
   # Make sure subversion directory exists
   if [[ ! -d "$BASE_PATH/$dir" ]]; then
-    printf >&2 "./%s: <directory> doesn't exist\n" "$SCRIPT_NAME" && exit 1
+    >&2 printf "./%s: <directory> doesn't exist\n" "$SCRIPT_NAME"
+    exit 1
   fi
 
   local patchfile
@@ -29,7 +31,8 @@ main() {
 
   # Make sure generated patch is not empty
   if [[ ! -s "/tmp/$patchfile" ]]; then
-    printf >&2 "./%s: No changes found in %s\n" "$SCRIPT_NAME" "$dir" && exit 1
+    >&2 printf "./%s: No changes found in %s\n" "$SCRIPT_NAME" "$dir"
+    exit 1
   fi
 
   # If variant with same name exists, ask for confirmation before overriding
@@ -37,7 +40,8 @@ main() {
     read -p "This variant already exists (will be lost, if it wasn't applied).  Override?  [yn] " -n 1 -r
     echo
     if [[ ! "$REPLY" =~ ^[Yy]$ ]]; then
-        printf >&2 "./%s: Aborting w/o applying any changes\n" "$SCRIPT_NAME" && exit 1
+        >&2 printf "./%s: Aborting w/o applying any changes\n" "$SCRIPT_NAME"
+        exit 1
     fi
   fi
 
