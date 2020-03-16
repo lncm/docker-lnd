@@ -56,6 +56,8 @@ jobs:
           echo ::set-env name=VARIANT::"$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\4|")"
           echo ::set-env name=BUILD::"$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\5|")"
 
+          echo ::set-env name=FILE_SUFFIX::"$(echo "$TAG" | tr + -)-${{ matrix.arch }}"
+
       # GOARCH => arm|arm64
       # GOARM  => 6|7
       - name: Setup Go environment
@@ -135,7 +137,7 @@ jobs:
           mkdir -p images/
 
           docker tag  "$APP"  "$APP:${{ matrix.arch }}"
-          docker save "$APP:${{ matrix.arch }}" | gzip > "images/docker-$APP-$TAG-${{ matrix.arch }}.tgz"
+          docker save "$APP:${{ matrix.arch }}" | gzip > "images/docker-$APP-$FILE_SUFFIX.tgz"
 
       - name: Print sha256sum of built image
         run: sha256sum images/*
@@ -157,7 +159,7 @@ jobs:
           # Compress each binary separately
           for file in binaries/*; do
             gzip "$file"
-            mv "$file.gz" "$file-$TAG-${{ matrix.arch }}.gz"
+            mv "$file.gz" "$file-$FILE_SUFFIX.gz"
           done
 
       - name: Print sha256sum of extracted binaries
@@ -260,7 +262,6 @@ jobs:
 
       - name: Create SHA256SUMS file
         run: |
-          touch SHA256SUMS
           (cd docker-images;  sha256sum *) >> ./SHA256SUMS
           (cd binaries;       sha256sum *) >> ./SHA256SUMS
 
