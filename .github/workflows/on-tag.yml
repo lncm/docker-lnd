@@ -52,7 +52,9 @@ jobs:
 
           echo ::set-env name=DIR::"$DIR"
 
-          echo ::set-env name=TAG::"$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\1|")"
+          TAG="$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\1|")"
+
+          echo ::set-env name=TAG::"$TAG"
           echo ::set-env name=VARIANT::"$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\4|")"
           echo ::set-env name=BUILD::"$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\5|")"
 
