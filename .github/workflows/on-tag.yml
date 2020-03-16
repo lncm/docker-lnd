@@ -186,6 +186,7 @@ jobs:
 
           echo ::set-env name=TAG::"$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\1|")"
           echo ::set-env name=VERSION::"$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\2|")"
+          echo ::set-env name=VARIANT::"$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\4|")"
           echo ::set-env name=BUILD::"$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\5|")"
 
       - name: Print just set ENV VARs
@@ -257,23 +258,26 @@ jobs:
       - name: Print checksums of everything
         run: sha256sum  binaries/*  docker-images/*
 
-      - name: Prepare for GH Release
+      - name: Create SHA256SUMS file
         run: |
-          VARIANT="$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\4|")"
+          touch SHA256SUMS
+          (cd docker-images;  sha256sum *) >> ./SHA256SUMS
+          (cd binaries;       sha256sum *) >> ./SHA256SUMS
 
-          if [ -n "$VARIANT" ]; then
-            echo ::set-env name=VARIANT_SUFFIX::"-$VARIANT"
+      - name: Add variant info to Release desc
+        if: env.VARIANT != ''
+        run: |
+          echo ::set-env name=VARIANT_SUFFIX::"-$VARIANT"
 
-            DIR="$(echo "${VERSION#v}" | cut -d. -f-2)"
+          DIR="$(echo "${VERSION#v}" | cut -d. -f-2)"
 
-            URL="$(printf 'https://github.com/%s/blob/%s/%s/variant-%s.patch' \
-              "${{ github.repository }}" \
-              "${{ github.sha }}" \
-              "$DIR" \
-              "$VARIANT")"
+          URL="$(printf 'https://github.com/%s/blob/%s/%s/variant-%s.patch' \
+            "${{ github.repository }}" \
+            "${{ github.sha }}" \
+            "$DIR" \
+            "$VARIANT")"
 
-            echo ::set-env name=VARIANT_NOTE::"$(printf ' and has been build in [`%s`](%s) variant' "$VARIANT" "$URL")"
-          fi
+          echo ::set-env name=VARIANT_NOTE::"$(printf ' and has been build in [`%s`](%s) variant' "$VARIANT" "$URL")"
 
       - name: Upload binaries to Github Release
         uses: meeDamian/github-release@2.0
@@ -287,3 +291,4 @@ jobs:
           files: >
             docker-images/*
             binaries/*
+            SHA256SUMS
