@@ -258,7 +258,7 @@ jobs:
         run: sha256sum  binaries/*  docker-images/*
 
       - name: Upload binaries to Github Release
-        uses: meeDamian/github-release@v1.0.1
+        uses: meeDamian/github-release@2.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           name: ${{ env.VERSION }}
