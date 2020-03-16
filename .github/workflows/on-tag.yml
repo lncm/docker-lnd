@@ -257,12 +257,31 @@ jobs:
       - name: Print checksums of everything
         run: sha256sum  binaries/*  docker-images/*
 
+      - name: Prepare for GH Release
+        run: |
+          VARIANT="$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\4|")"
+
+          if [ -n "$VARIANT" ]; then
+            echo ::set-env name=VARIANT_SUFFIX::"-$VARIANT"
+
+            DIR="$(echo "${VERSION#v}" | cut -d. -f-2)"
+
+            URL="$(printf 'https://github.com/%s/blob/%s/%s/variant-%s.patch' \
+              "${{ github.repository }}" \
+              "${{ github.sha }}" \
+              "$DIR" \
+              "$VARIANT")"
+
+            echo ::set-env name=VARIANT_NOTE::"$(printf ' and has been build in [`%s`](%s) variant' "$VARIANT" "$URL")"
+          fi
+
       - name: Upload binaries to Github Release
         uses: meeDamian/github-release@2.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          name: ${{ env.VERSION }}
-          body: "This release packages `lnd` to be on par with https://github.com/lightningnetwork/lnd/releases/tag/${{ env.VERSION }}-beta"
+          name: ${{ env.VERSION }}${{ env.VARIANT_SUFFIX }}
+          body: |
+            This release packages `lnd` to be on par with https://github.com/lightningnetwork/lnd/releases/tag/${{ env.VERSION }}-beta${{ env.VARIANT_NOTE }}.
           prerelease: true
           gzip: false
           files: >
