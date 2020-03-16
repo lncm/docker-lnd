@@ -45,7 +45,7 @@ jobs:
           VERSION="$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\2|")"
           DIR="$(echo "${VERSION#v}" | cut -d. -f-2)"
 
-          if ! grep -q "^ARG VERSION=$VERSION$" "$DIR/Dockerfile"; then
+          if ! grep -q "^ARG VERSION=$VERSION\(-beta\)\?$" "$DIR/Dockerfile"; then
             echo "ERR: $DIR/Dockerfile must contain VERSION=$VERSION"
             exit 1
           fi
