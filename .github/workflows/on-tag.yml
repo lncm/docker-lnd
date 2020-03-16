@@ -262,7 +262,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           name: ${{ env.VERSION }}
-          body: "This release packages `lnd` to be on par with https://github.com/lightningnetwork/lnd/releases/tag/${{ envVERSION }}-beta"
+          body: "This release packages `lnd` to be on par with https://github.com/lightningnetwork/lnd/releases/tag/${{ env.VERSION }}-beta"
           prerelease: true
           gzip: false
           files: >
