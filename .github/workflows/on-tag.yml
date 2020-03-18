@@ -79,6 +79,7 @@ jobs:
           printf "VARIANT: %s\n"  "$VARIANT"
           printf "    DIR: %s\n"  "$DIR"
           printf "  BUILD: %s\n"  "$BUILD"
+          printf " SUFFIX: %s\n"  "$FILE_SUFFIX"
           printf " GOARCH: %s\n"  "$GOARCH"
           printf "  GOARM: %s\n"  "$GOARM"
 
@@ -189,9 +190,16 @@ jobs:
           echo ::set-env name=SLUG::"$(echo ${GITHUB_REPOSITORY,,} | sed 's/docker-//')"
 
           echo ::set-env name=TAG::"$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\1|")"
-          echo ::set-env name=VERSION::"$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\2|")"
-          echo ::set-env name=VARIANT::"$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\4|")"
+
+          VERSION="$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\2|")"
+          echo ::set-env name=VERSION::"$VERSION"
+
+          VARIANT="$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\4|")"
+          echo ::set-env name=VARIANT::"$VARIANT"
+
           echo ::set-env name=BUILD::"$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\5|")"
+
+          echo ::set-env name=BASE_TAG::"$VERSION${VARIANT:+-$VARIANT}"
 
       - name: Print just set ENV VARs
         run: |
@@ -200,6 +208,7 @@ jobs:
           printf "   SLUG: %s\n"  "$SLUG"
           printf "VERSION: %s\n"  "$VERSION"
           printf "  BUILD: %s\n"  "$BUILD"
+          printf "BASE_TAG: %s\n" "$BASE_TAG"
 
       - name: Download all build artifacts
         uses: actions/download-artifact@v1.0.0
@@ -212,12 +221,11 @@ jobs:
       - name: Load images locally
         run: find docker-images  -exec docker load -i "{}" \;
 
-      # No short tags.  lnd releases are quite chaotic, it's better to no provide convenience that can easily backfire.
       - name: Version-tag all images
         run: |
           for arch in $(docker images "$APP" --format "{{.Tag}}"); do
-            docker tag  "$APP:$arch"  "$SLUG:$VERSION-$arch-build$BUILD"
-            docker tag  "$APP:$arch"  "$SLUG:$VERSION-$arch"
+            docker tag  "$APP:$arch"  "$SLUG:$BASE_TAG-$arch-build$BUILD"
+            docker tag  "$APP:$arch"  "$SLUG:$BASE_TAG-$arch"
           done
 
       - name: List all tagged images
@@ -235,23 +243,23 @@ jobs:
 
       - name: Create manifest
         run: >
-          docker -D manifest create  "$SLUG:$VERSION"  \
-            "$SLUG:$VERSION-amd64" \
-            "$SLUG:$VERSION-arm32v6" \
-            "$SLUG:$VERSION-arm32v7" \
-            "$SLUG:$VERSION-arm64v8"
+          docker -D manifest create  "$SLUG:$BASE_TAG"  \
+            "$SLUG:$BASE_TAG-amd64" \
+            "$SLUG:$BASE_TAG-arm32v6" \
+            "$SLUG:$BASE_TAG-arm32v7" \
+            "$SLUG:$BASE_TAG-arm64v8"
 
       - name: Annotate images for manifest
         run: |
-          docker manifest annotate "$SLUG:$VERSION" "$SLUG:$VERSION-arm32v6"  --os linux  --arch arm    --variant v6
-          docker manifest annotate "$SLUG:$VERSION" "$SLUG:$VERSION-arm32v7"  --os linux  --arch arm    --variant v7
-          docker manifest annotate "$SLUG:$VERSION" "$SLUG:$VERSION-arm64v8"  --os linux  --arch arm64  --variant v8
+          docker manifest annotate "$SLUG:$BASE_TAG" "$SLUG:$BASE_TAG-arm32v6"  --os linux  --arch arm    --variant v6
+          docker manifest annotate "$SLUG:$BASE_TAG" "$SLUG:$BASE_TAG-arm32v7"  --os linux  --arch arm    --variant v7
+          docker manifest annotate "$SLUG:$BASE_TAG" "$SLUG:$BASE_TAG-arm64v8"  --os linux  --arch arm64  --variant v8
 
       - name: Print manifest details
-        run: docker manifest inspect "$SLUG:$VERSION" | jq '.'
+        run: docker manifest inspect "$SLUG:$BASE_TAG" | jq '.'
 
       - name: Push manifest
-        run: docker manifest push "$SLUG:$VERSION"
+        run: docker manifest push "$SLUG:$BASE_TAG"
 
 
       - name: Download binaries from build artifacts
@@ -270,8 +278,6 @@ jobs:
       - name: Add variant info to Release desc
         if: env.VARIANT != ''
         run: |
-          echo ::set-env name=VARIANT_SUFFIX::"-$VARIANT"
-
           DIR="$(echo "${VERSION#v}" | cut -d. -f-2)"
 
           URL="$(printf 'https://github.com/%s/blob/%s/%s/variant-%s.patch' \
@@ -286,7 +292,7 @@ jobs:
         uses: meeDamian/github-release@2.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          name: ${{ env.VERSION }}${{ env.VARIANT_SUFFIX }}
+          name: ${{ env.BASE_TAG }}
           body: |
             This release packages `lnd` to be on par with https://github.com/lightningnetwork/lnd/releases/tag/${{ env.VERSION }}-beta${{ env.VARIANT_NOTE }}.
           prerelease: true
