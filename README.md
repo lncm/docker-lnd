@@ -1,5 +1,5 @@
-lncm/docker-lnd
-================
+lncm/lnd
+========
 
 ![Build Status]
 [![gh_last_release_svg]][gh_last_release_url]
