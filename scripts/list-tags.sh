@@ -12,7 +12,7 @@ main() {
   curl -s "https://registry.hub.docker.com/v1/repositories/$repo/tags" \
     | jq -r '.[].name' \
     | grep '^v.*' \
-    | sed 's/-build.*//' \
+    | grep -v '\-build' \
     | tr -s '-' '~' \
     | sort -Vr | uniq \
     | tr -s '~' '-' \
