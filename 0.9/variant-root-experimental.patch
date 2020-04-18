@@ -36,21 +36,21 @@ index 1fb16c7..478c6be 100644
 -
 -# NOTE: Default GID == UID == 1000
 -RUN adduser --disabled-password \
--            --home ${DIR} \
+-            --home "$DIR" \
 -            --gecos "" \
--            ${USER}
+-            "$USER"
 -
--# Needed to prevent `VOLUME ${DIR}/.lnd/` creating it with `root` as owner
--USER ${USER}
--RUN mkdir -p ${DIR}/.lnd/
+-# Needed to prevent `VOLUME $DIR/.lnd/` creating it with `root` as owner
+-USER $USER
+-RUN mkdir -p "$DIR/.lnd/"
 -
 -
 -
 -#
  ## This is the final image that gets shipped to Docker Hub
  #
- # NOTE: `${ARCH:+${ARCH}/}` - if ARCH is set, append `/` to it, leave it empty otherwise
- FROM ${ARCH:+${ARCH}/}alpine:${VER_ALPINE} AS final
+ # NOTE: `${ARCH:+$ARCH/}` - if ARCH is set, append `/` to it, leave it empty otherwise
+ FROM ${ARCH:+$ARCH/}alpine:${VER_ALPINE} AS final
  
 -ARG USER
 -ARG DIR
@@ -60,8 +60,8 @@ index 1fb16c7..478c6be 100644
 -# Copy only the relevant parts from the `perms` image
 -COPY  --from=perms /etc/group /etc/passwd /etc/shadow  /etc/
 -
--# From `perms`, copy *the contents* of `${DIR}` (ie. `.lnd/`), and set correct owner for destination `${DIR}`
--COPY  --from=perms --chown=${USER}:${USER} ${DIR}  ${DIR}
+-# From `perms`, copy *the contents* of `$DIR` (ie. `.lnd/`), and set correct owner for destination `$DIR`
+-COPY  --from=perms --chown=$USER:$USER $DIR  $DIR
 -
 -#
  COPY  --from=cross-check /etc/ssl/certs/ca-certificates.crt  /etc/ssl/certs/
@@ -69,10 +69,10 @@ index 1fb16c7..478c6be 100644
  # Copy binaries from the cross-check stage
  COPY  --from=cross-check /bin/lnd /bin/lncli  /usr/local/bin/
  
--USER ${USER}
+-USER $USER
 -
  # Expose volume containing all `lnd` data
--VOLUME ${DIR}/.lnd/
+-VOLUME $DIR/.lnd/
 +VOLUME /root/.lnd/
  
  # Expose lnd ports (rest, p2p, watchtower, rpc respectively)
