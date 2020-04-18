@@ -1,0 +1,79 @@
+diff --git a/0.9/Dockerfile b/0.9/Dockerfile
+index 1fb16c7..478c6be 100644
+--- a/0.9/Dockerfile
++++ b/0.9/Dockerfile
+@@ -11,9 +11,6 @@ ARG ARCH
+ ARG VER_GO=1.14
+ ARG VER_ALPINE=3.11
+ 
+-ARG USER=lnd
+-ARG DIR=/data/
+-
+ #
+ ## NOTE: You should only override the ARGs below, if you know what you're doing
+ #
+@@ -29,7 +26,7 @@ ARG TAGS_LND="signrpc chainrpc"
+ ARG TAGS_STATIC="osusergo netgo static_build"
+ 
+ # Added by yours truly (@lncm)
+-ARG TAGS_EXTRA=""
++ARG TAGS_EXTRA="experimental"
+ 
+ # Force Go to use the cgo based DNS resolver. This is required to ensure DNS
+ #   queries required to connect to linked containers succeed
+@@ -232,54 +229,21 @@ RUN du          /bin/lnd  /bin/lncli
+ 
+ 
+ 
+-#
+-## This stage is used to generate /etc/{group,passwd,shadow} files & avoid RUN-ing commands in the `final` layer,
+-#   which would break cross-compiled images.
+-#
+-FROM alpine:${VER_ALPINE} AS perms
+-
+-ARG USER
+-ARG DIR
+-
+-# NOTE: Default GID == UID == 1000
+-RUN adduser --disabled-password \
+-            --home "$DIR" \
+-            --gecos "" \
+-            "$USER"
+-
+-# Needed to prevent `VOLUME $DIR/.lnd/` creating it with `root` as owner
+-USER $USER
+-RUN mkdir -p "$DIR/.lnd/"
+-
+-
+-
+-#
+ ## This is the final image that gets shipped to Docker Hub
+ #
+ # NOTE: `${ARCH:+$ARCH/}` - if ARCH is set, append `/` to it, leave it empty otherwise
+ FROM ${ARCH:+$ARCH/}alpine:${VER_ALPINE} AS final
+ 
+-ARG USER
+-ARG DIR
+ 
+ LABEL maintainer="Damian Mee (@meeDamian)"
+ 
+-# Copy only the relevant parts from the `perms` image
+-COPY  --from=perms /etc/group /etc/passwd /etc/shadow  /etc/
+-
+-# From `perms`, copy *the contents* of `$DIR` (ie. `.lnd/`), and set correct owner for destination `$DIR`
+-COPY  --from=perms --chown=$USER:$USER $DIR  $DIR
+-
+-#
+ COPY  --from=cross-check /etc/ssl/certs/ca-certificates.crt  /etc/ssl/certs/
+ 
+ # Copy binaries from the cross-check stage
+ COPY  --from=cross-check /bin/lnd /bin/lncli  /usr/local/bin/
+ 
+-USER $USER
+-
+ # Expose volume containing all `lnd` data
+-VOLUME $DIR/.lnd/
++VOLUME /root/.lnd/
+ 
+ # Expose lnd ports (rest, p2p, watchtower, rpc respectively)
+ EXPOSE  8080  9735  9911  10009
