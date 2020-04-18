@@ -68,7 +68,7 @@ index 1fb16c7..478c6be 100644
  
  # Copy binaries from the cross-check stage
  COPY  --from=cross-check /bin/lnd /bin/lncli  /usr/local/bin/
- 
+
 -USER $USER
 -
  # Expose volume containing all `lnd` data
