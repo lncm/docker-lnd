@@ -2,7 +2,7 @@
 # If the binaries are the same, one is compressed, and copied to the `final` stage
 
 # lnd version to be build
-ARG VERSION=v0.10.0-beta.rc2
+ARG VERSION=v0.10.0-beta.rc5
 
 # Target CPU archtecture of built lnd binary
 ARG ARCH
