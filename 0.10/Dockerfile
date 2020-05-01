@@ -2,7 +2,7 @@
 # If the binaries are the same, one is compressed, and copied to the `final` stage
 
 # lnd version to be build
-ARG VERSION=v0.10.0-beta.rc5
+ARG VERSION=v0.10.0-beta
 
 # Target CPU archtecture of built lnd binary
 ARG ARCH
@@ -20,9 +20,8 @@ ARG DIR=/data/
 ARG PKG=github.com/lightningnetwork/lnd
 
 # original content
-#   src: https://github.com/lightningnetwork/lnd/blob/v0.10.0-beta.rc2/build/release/release.sh#L133-L134
-ARG TAGS_BASE="autopilotrpc invoicesrpc walletrpc watchtowerrpc"
-ARG TAGS_LND="signrpc chainrpc"
+#   src: https://github.com/lightningnetwork/lnd/blob/v0.10.0-beta/make/release_flags.mk#L36
+ARG TAGS_BASE="autopilotrpc signrpc walletrpc chainrpc invoicesrpc watchtowerrpc"
 
 # Added to make output binary static
 #   ctx: https://github.com/golang/go/issues/26492
@@ -102,7 +101,6 @@ ARG GOARM
 # Capture ARGs defined globally
 ARG PKG
 ARG TAGS_BASE
-ARG TAGS_LND
 ARG TAGS_STATIC
 ARG TAGS_EXTRA
 ARG GODEBUG
@@ -117,6 +115,7 @@ ENV GOOS ${GOARCH:+linux}
 ENV GOARM ${GOARM:-${TARGETVARIANT:+6}}
 
 ENV LDFLAGS "-s -w -buildid="
+ENV CGO_ENABLED 0
 
 RUN apk add --no-cache  musl-dev  git  gcc
 
@@ -128,12 +127,11 @@ WORKDIR /go/src/
 
 RUN env && go version && go env
 
-## Build lnd binaries
-#   The first line gets hash of the last git-commit & second one prints it.
-#   And here's all other flags explained:
+## Build `lnd` & `lncli` binaries
+#   Flags explained:
 #       `-v` [verbocity++] print names of compiled packages
-#       `-mod=readonly` [reproducibility] do not change versions of used packages no matter what
 #       `-trimpath` [reproducibility] make sure absolute paths are not included anywhere in the binary
+#       `-mod=readonly` [reproducibility] do not change versions of used packages no matter what
 #       `-tags` [reproducibility] tell Go to build a static binary, see more: https://github.com/golang/go/issues/26492
 #       `-ldflags`
 #           `-s` [size--] do not include symbol table and debug info
@@ -143,15 +141,9 @@ RUN env && go version && go env
 #
 #   NOTE: all of this has to happen in a single `RUN`, because it's impossible to set ENV var in Docker to
 #       an output of an expression
-RUN export GIT_TAG="$(git describe --abbrev=40)"; \
-    echo "Building git tag: $GIT_TAG"; \
-    go build  -v  -trimpath  -mod=readonly  -tags="$TAGS $TAGS_LND" \
-        -ldflags="$LDFLAGS -X $PKG/build.Commit=$GIT_TAG" \
-        -o /go/bin/  "$PKG/cmd/lnd" && \
-    go build  -v  -trimpath  -mod=readonly  -tags="$TAGS" \
-        -ldflags="$LDFLAGS -X $PKG/build.Commit=$GIT_TAG" \
-        -o /go/bin/  "$PKG/cmd/lncli"
-
+RUN go build  -v  -trimpath  -mod=readonly  -tags="$TAGS" \
+    -ldflags="$LDFLAGS -X $PKG/build.Commit=$(git describe --abbrev=40)" \
+    -o /go/bin/  "$PKG/cmd/lnd"  "$PKG/cmd/lncli"
 
 
 #
@@ -165,7 +157,6 @@ ARG GOARCH
 ARG GOARM
 ARG PKG
 ARG TAGS_BASE
-ARG TAGS_LND
 ARG TAGS_STATIC
 ARG TAGS_EXTRA
 ARG GODEBUG
@@ -174,6 +165,7 @@ ENV TAGS="$TAGS_BASE $TAGS_STATIC $TAGS_EXTRA"
 ENV GOOS ${GOARCH:+linux}
 ENV GOARM ${GOARM:-${TARGETVARIANT:+6}}
 ENV LDFLAGS "-s -w -buildid="
+ENV CGO_ENABLED 0
 
 RUN apt-get update  &&  apt-get -y install  file  git
 
@@ -185,14 +177,9 @@ WORKDIR /go/src/
 
 RUN env && go version && go env
 
-RUN export GIT_TAG="$(git describe --abbrev=40)"; \
-    echo "Building git tag: $GIT_TAG"; \
-    go build  -v  -trimpath  -mod=readonly  -tags="$TAGS $TAGS_LND" \
-        -ldflags="$LDFLAGS -X $PKG/build.Commit=$GIT_TAG" \
-        -o /go/bin/  "$PKG/cmd/lnd" && \
-    go build  -v  -trimpath  -mod=readonly  -tags="$TAGS" \
-        -ldflags="$LDFLAGS -X $PKG/build.Commit=$GIT_TAG" \
-        -o /go/bin/  "$PKG/cmd/lncli"
+RUN go build  -v  -trimpath  -mod=readonly  -tags="$TAGS" \
+    -ldflags="$LDFLAGS -X $PKG/build.Commit=$(git describe --abbrev=40)" \
+    -o /go/bin/  "$PKG/cmd/lnd"  "$PKG/cmd/lncli"
 
 
 
