@@ -44,14 +44,11 @@ ENV KEYS 4AB7F8DA6FAEBB3B70B1F903BC13F65E2DC84465 C49CD91BF681FDAD9AE79BBEA61B9D
 #   This command doesn't stop the flow on error, and
 #   Key verification happens in the next step
 RUN wget -qO- "https://keybase.io/$KEYBASE_USER/pgp_keys.asc" | gpg --import && \
-    for srv in  keyserver.ubuntu.com  hkp://p80.pool.sks-keyservers.net:80  ha.pool.sks-keyservers.net  keyserver.pgp.com  pgp.mit.edu; do \
-        timeout 9s  gpg  --keyserver "$srv"  --recv-key $KEYS  >/dev/null 2<&1 && \
-            { echo "OK:  $srv" && exit 0; } || \
-            { echo "ERR: $srv fail=$?"; } ; \
-    done
+    timeout 16s  gpg  --keyserver keyserver.ubuntu.com  --recv-keys $KEYS
 
-RUN gpg --list-keys && \
-    gpg --list-keys $KEYS
+# Print imported keys, but also ensure there's no other keys in the system
+RUN gpg --list-keys | tail -n +3 | tee /tmp/keys.txt && \
+    gpg --list-keys $KEYS | diff - /tmp/keys.txt
 
 RUN mkdir -p /go/src/
 
