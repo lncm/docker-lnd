@@ -177,7 +177,7 @@ RUN go build  -v  -trimpath  -mod=readonly  -tags="$TAGS" \
 FROM alpine:${VER_ALPINE} AS cross-check
 
 # Install utilities used later
-RUN apk add --no-cache  ca-certificates  file  upx
+RUN apk add --no-cache  file  upx
 
 RUN mkdir -p  /bin  /alpine  /debian
 
@@ -245,9 +245,6 @@ COPY  --from=perms /etc/group /etc/passwd /etc/shadow  /etc/
 # From `perms`, copy *the contents* of `$DIR` (ie. `.lnd/`), and set correct owner for destination `$DIR`
 COPY  --from=perms --chown=$USER:$USER $DIR  $DIR
 
-#
-COPY  --from=cross-check /etc/ssl/certs/ca-certificates.crt  /etc/ssl/certs/
-
 # Copy binaries from the cross-check stage
 COPY  --from=cross-check /bin/lnd /bin/lncli  /usr/local/bin/
 
@@ -260,4 +257,4 @@ VOLUME $DIR/.lnd/
 EXPOSE  8080  9735  9911  10009
 
 # Specify the start command and entrypoint as the lnd daemon
-ENTRYPOINT ["lnd"]
+ENTRYPOINT ["/bin/lnd"]
