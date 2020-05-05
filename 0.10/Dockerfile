@@ -23,16 +23,8 @@ ARG PKG=github.com/lightningnetwork/lnd
 #   src: https://github.com/lightningnetwork/lnd/blob/v0.10.0-beta/make/release_flags.mk#L36
 ARG TAGS_BASE="autopilotrpc signrpc walletrpc chainrpc invoicesrpc watchtowerrpc"
 
-# Added to make output binary static
-#   ctx: https://github.com/golang/go/issues/26492
-ARG TAGS_STATIC="osusergo netgo static_build"
-
 # Added by yours truly (@lncm)
 ARG TAGS_EXTRA=""
-
-# Force Go to use the cgo based DNS resolver. This is required to ensure DNS
-#   queries required to connect to linked containers succeed
-ARG GODEBUG="netdns=cgo"
 
 
 #
@@ -101,12 +93,10 @@ ARG GOARM
 # Capture ARGs defined globally
 ARG PKG
 ARG TAGS_BASE
-ARG TAGS_STATIC
 ARG TAGS_EXTRA
-ARG GODEBUG
 
 # Aggregate all tags together
-ENV TAGS="$TAGS_BASE $TAGS_STATIC $TAGS_EXTRA"
+ENV TAGS="$TAGS_BASE $TAGS_EXTRA"
 
 # Only set GOOS if GOARCH is set
 ENV GOOS ${GOARCH:+linux}
@@ -157,11 +147,9 @@ ARG GOARCH
 ARG GOARM
 ARG PKG
 ARG TAGS_BASE
-ARG TAGS_STATIC
 ARG TAGS_EXTRA
-ARG GODEBUG
 
-ENV TAGS="$TAGS_BASE $TAGS_STATIC $TAGS_EXTRA"
+ENV TAGS="$TAGS_BASE $TAGS_EXTRA"
 ENV GOOS ${GOARCH:+linux}
 ENV GOARM ${GOARM:-${TARGETVARIANT:+6}}
 ENV LDFLAGS "-s -w -buildid="
