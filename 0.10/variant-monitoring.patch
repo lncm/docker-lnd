@@ -19,7 +19,7 @@ index 9ae5e1e..c63bd6b 100644
 +EXPOSE 8989
 +
  # Specify the start command and entrypoint as the lnd daemon
- ENTRYPOINT ["/bin/lnd"]
+ ENTRYPOINT ["/usr/local/bin/lnd"]
 +
 +# Okay to hardcode them here, as it's in a variant that specifically wants Prometheus
 +CMD ["--prometheus.enable", "--prometheus.listen=0.0.0.0:8989"]
