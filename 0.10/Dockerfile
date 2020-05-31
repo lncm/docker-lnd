@@ -254,4 +254,4 @@ VOLUME $DIR/.lnd/
 EXPOSE  8080  9735  9911  10009
 
 # Specify the start command and entrypoint as the lnd daemon
-ENTRYPOINT ["lnd"]
+ENTRYPOINT ["/usr/local/bin/lnd"]
