@@ -143,7 +143,7 @@ jobs:
           docker save "$APP:${{ matrix.arch }}" | gzip > "images/docker-$APP-$FILE_SUFFIX.tgz"
 
       - name: Print sha256sum of built image
-        run: sha256sum images/*
+        run: (cd images/; sha256sum *)
 
       - name: Upload docker image as build artifact
         uses: actions/upload-artifact@v1.0.0
