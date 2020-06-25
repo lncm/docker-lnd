@@ -6,11 +6,11 @@ set -eo pipefail
 ## Given version (and optional variant), this script creates & pushes a relevant git-tag.
 #
 
-# required version
-VERSION=$1
+# Required version
+VERSION="$1"
 
 # Optional variant
-VARIANT=$2
+VARIANT="$2"
 
 # Verify version to-be-released is provided
 if [[ -z "$VERSION" ]]; then
@@ -50,27 +50,19 @@ fi
 
 git fetch --tags
 
-# Get last build number
-LAST="$(git tag | grep '+build' | sed 's|^.*build||' | sort -h | tail -n 1)"
-
-LAST="${LAST:-0}"
+# Get last build number used for $VERSION
+LAST=$(git tag | sed -n "s|^$VERSION.*+build||p" | sort -rn | head -n 1)
 
 # Increment it
-((LAST++))
+LAST=$((LAST+1))
 
-
+# Construct the full $TAG, ex: `v0.10.1-variant+build666`
 TAG="$VERSION${VARIANT:+-$VARIANT}+build$LAST"
 
-
-printf "Creating tag: %s…\t" "$TAG"
-
+printf "Creating tag: %s, " "$TAG"
 git tag -sa "$TAG" -m "$TAG"
+echo "done."
 
-echo "done"
-
-
-printf "Pushing tag: %s…\t" "$TAG"
-
+printf "Pushing tag: %s…\n" "$TAG"
 git push origin "$TAG"
-
-echo "All done"
+echo "All done."
