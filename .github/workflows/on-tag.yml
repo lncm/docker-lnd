@@ -143,7 +143,7 @@ jobs:
           docker save "$APP:${{ matrix.arch }}" | gzip > "images/docker-$APP-$FILE_SUFFIX.tgz"
 
       - name: Print sha256sum of built image
-        run: sha256sum images/*
+        run: (cd images/; sha256sum *)
 
       - name: Upload docker image as build artifact
         uses: actions/upload-artifact@v1.0.0
@@ -152,21 +152,23 @@ jobs:
           path: images/
 
       - name: Extract binaries from the built image
+        env:
+          IMG: ${{ env.APP }}:${{ matrix.arch }}
+          SRC: /usr/local/bin
+          BINARIES: lnd lncli
+          DST: binaries
         run: |
-          mkdir -p binaries/
-          ID=$(docker create "$APP:${{ matrix.arch }}")
-          docker cp  "$ID:/usr/local/bin/lnd"     binaries/
-          docker cp  "$ID:/usr/local/bin/lncli"   binaries/
-          docker rm  "$ID"
+          mkdir -p "$DST"
 
-          # Compress each binary separately
-          for file in binaries/*; do
-            gzip "$file"
-            mv "$file.gz" "$file-$FILE_SUFFIX.gz"
+          id="$(docker create "$IMG")"
+
+          for binary  in  $BINARIES; do
+            docker cp "$id:$SRC/$binary" - | gzip -n > "$DST/$binary-$FILE_SUFFIX.gz"
           done
 
-      - name: Print sha256sum of extracted binaries
-        run: sha256sum binaries/*
+          docker rm "$id"
+
+          (cd "$DST"; sha256sum *)
 
       - name: Upload raw binaries as build artifacts
         uses: actions/upload-artifact@v1.0.0
