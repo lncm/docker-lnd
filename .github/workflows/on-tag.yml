@@ -235,7 +235,7 @@ jobs:
         env:
           DOCKER_USER: ${{ secrets.DOCKER_USER }}
         run: |
-          echo "Logging in as ${DOCKER_USER}…"
+          echo "Logging in as ${{ secrets.DOCKER_USER }}"
           echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u="$DOCKER_USER" --password-stdin
 
       - name: Push all images
