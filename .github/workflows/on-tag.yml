@@ -168,7 +168,7 @@ jobs:
 
           docker rm "$id"
 
-          (cd $DST; sha256sum *)
+          (cd "$DST"; sha256sum *)
 
       - name: Upload raw binaries as build artifacts
         uses: actions/upload-artifact@v1.0.0
