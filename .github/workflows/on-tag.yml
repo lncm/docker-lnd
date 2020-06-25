@@ -163,8 +163,7 @@ jobs:
           id="$(docker create "$IMG")"
 
           for binary  in  $BINARIES; do
-            docker cp "$id:$SRC/$binary" - \
-              | gzip -n > "$DST/$binary-$FILE_SUFFIX.gz"
+            docker cp "$id:$SRC/$binary" - | gzip -n > "$DST/$binary-$FILE_SUFFIX.gz"
           done
 
           docker rm "$id"
