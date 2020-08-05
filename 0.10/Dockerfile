@@ -9,7 +9,7 @@ ARG ARCH
 
 # Define default versions so that they don't have to be repreated throughout the file
 ARG VER_GO=1.14
-ARG VER_ALPINE=3.11
+ARG VER_ALPINE=3.12
 
 ARG USER=lnd
 ARG DIR=/data/
