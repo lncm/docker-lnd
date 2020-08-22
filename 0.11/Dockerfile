@@ -2,13 +2,13 @@
 # If the binaries are the same, one is compressed, and copied to the `final` stage
 
 # lnd version to be build
-ARG VERSION=v0.10.4-beta
+ARG VERSION=v0.11.0-beta
 
 # Target CPU archtecture of built lnd binary
 ARG ARCH
 
 # Define default versions so that they don't have to be repreated throughout the file
-ARG VER_GO=1.14
+ARG VER_GO=1.15
 ARG VER_ALPINE=3.12
 
 ARG USER=lnd
@@ -66,7 +66,7 @@ RUN git verify-tag "$VERSION" || \
     { git verify-tag --raw "$VERSION" 2>&1 | grep EXPKEYSIG && echo "Accepting valid signature with an expired key!"; }
 
 # NOTE: needed to have deterministic builds
-RUN go mod edit -go=1.14
+RUN go mod edit -go=1.15
 
 RUN go mod tidy
 
