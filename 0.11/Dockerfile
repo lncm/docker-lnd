@@ -1,4 +1,4 @@
-# This Dockerfile build lnd v0.10.x twice: once on Alpine, once on Debian
+# This Dockerfile build lnd v0.11.x twice: once on Alpine, once on Debian
 # If the binaries are the same, one is compressed, and copied to the `final` stage
 
 # lnd version to be build
@@ -20,7 +20,7 @@ ARG DIR=/data
 ARG PKG=github.com/lightningnetwork/lnd
 
 # original content
-#   src: https://github.com/lightningnetwork/lnd/blob/v0.10.0-beta/make/release_flags.mk#L36
+#   src: https://github.com/lightningnetwork/lnd/blob/v0.11.0-beta/make/release_flags.mk#L36
 ARG TAGS_BASE="autopilotrpc signrpc walletrpc chainrpc invoicesrpc watchtowerrpc"
 
 # Added by yours truly (@lncm)
