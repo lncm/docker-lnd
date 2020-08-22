@@ -12,7 +12,7 @@ ARG VER_GO=1.15
 ARG VER_ALPINE=3.12
 
 ARG USER=lnd
-ARG DIR=/data/
+ARG DIR=/data
 
 #
 ## NOTE: You should only override the ARGs below, if you know what you're doing
