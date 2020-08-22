@@ -54,6 +54,7 @@ This repo builds [`lnd`] in a completely reproducible, and auditable way, and pa
 
 > **NOTE:** For an always up-to-date list see: https://hub.docker.com/r/lncm/lnd/tags
 
+* `v0.11.0` `v0.11.0-monitoring` `v0.11.0-experimental` `v0.11.0-etcd`
 * `v0.10.4` `v0.10.4-monitoring` `v0.10.4-experimental`
 * `v0.10.3`
 * `v0.10.2`
@@ -77,7 +78,7 @@ This repo builds [`lnd`] in a completely reproducible, and auditable way, and pa
 First pull the image from [Docker Hub]:
 
 ```bash
-docker pull lncm/lnd:v0.10.4
+docker pull lncm/lnd:v0.11.0
 ```
 
 > **NOTE:** Running above will automatically choose native architecture of your CPU.
@@ -87,7 +88,7 @@ docker pull lncm/lnd:v0.10.4
 Or, to pull a specific CPU architecture:
 
 ```bash
-docker pull lncm/lnd:v0.10.4-arm64v8
+docker pull lncm/lnd:v0.11.0-arm64v8
 ```
 
 #### Start
@@ -100,7 +101,7 @@ docker run  -it  --rm  --detach \
     -p 9735:9735 \
     -p 10009:10009 \
     --name lnd \
-    lncm/lnd:v0.10.4
+    lncm/lnd:v0.11.0
 ```
 
 That will runs `lnd` with:
