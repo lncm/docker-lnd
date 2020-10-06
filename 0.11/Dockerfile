@@ -20,7 +20,7 @@ ARG DIR=/data
 ARG PKG=github.com/lightningnetwork/lnd
 
 # original content
-#   src: https://github.com/lightningnetwork/lnd/blob/v0.11.0-beta/make/release_flags.mk#L36
+#   src: https://github.com/lightningnetwork/lnd/blob/v0.11.1-beta/make/release_flags.mk#L36
 ARG TAGS_BASE="autopilotrpc signrpc walletrpc chainrpc invoicesrpc watchtowerrpc"
 
 # Added by yours truly (@lncm)
