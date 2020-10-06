@@ -129,7 +129,11 @@ RUN env && go version && go env
 #   NOTE: all of this has to happen in a single `RUN`, because it's impossible to set ENV var in Docker to
 #       an output of an expression
 RUN go build  -v  -trimpath  -mod=readonly  -tags="$TAGS" \
-    -ldflags="$LDFLAGS -X $PKG/build.Commit=$(git describe --abbrev=40)" \
+    -ldflags="$LDFLAGS \
+        -X $PKG/build.Commit=$(git describe --abbrev=40) \
+        -X $PKG/build.CommitHash=$(git rev-parse HEAD) \
+        -X $PKG/build.GoVersion=$(go version | awk '{print $3}') \
+        -X $PKG/build.RawTags=$(echo $TAGS | tr ' ' ,)" \
     -o /go/bin/  "$PKG/cmd/lnd"  "$PKG/cmd/lncli"
 
 
@@ -163,7 +167,11 @@ WORKDIR /go/src/
 RUN env && go version && go env
 
 RUN go build  -v  -trimpath  -mod=readonly  -tags="$TAGS" \
-    -ldflags="$LDFLAGS -X $PKG/build.Commit=$(git describe --abbrev=40)" \
+    -ldflags="$LDFLAGS \
+        -X $PKG/build.Commit=$(git describe --abbrev=40) \
+        -X $PKG/build.CommitHash=$(git rev-parse HEAD) \
+        -X $PKG/build.GoVersion=$(go version | awk '{print $3}') \
+        -X $PKG/build.RawTags=$(echo $TAGS | tr ' ' ,)" \
     -o /go/bin/  "$PKG/cmd/lnd"  "$PKG/cmd/lncli"
 
 
