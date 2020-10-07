@@ -97,6 +97,13 @@ docker pull lncm/lnd:v0.11.0-arm64v8
 Then to start lnd, run:
 
 ```bash
+# Create a folder called ~/.lnd
+mkdir ~/.lnd
+# Then copy a config file into ~/.lnd
+# A sample config file is available from the LND upstream
+# https://github.com/lightningnetwork/lnd/blob/master/sample-lnd.conf
+
+# Run docker
 docker run  -it  --rm  --detach \
     -v ~/.lnd:/data/.lnd \
     -p 9735:9735 \
