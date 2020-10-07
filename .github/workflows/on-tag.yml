@@ -50,15 +50,15 @@ jobs:
             exit 1
           fi
 
-          echo ::set-env name=DIR::"$DIR"
+          echo "DIR=$DIR" >>"$GITHUB_ENV"
 
           TAG="$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\1|")"
+          echo "TAG=$TAG" >>"$GITHUB_ENV"
 
-          echo ::set-env name=TAG::"$TAG"
-          echo ::set-env name=VARIANT::"$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\4|")"
-          echo ::set-env name=BUILD::"$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\5|")"
+          echo "VARIANT=$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\4|")" >>"$GITHUB_ENV"
+          echo "BUILD=$(echo   "$GITHUB_REF" | sed -E "s|$TAG_FMT|\5|")" >>"$GITHUB_ENV"
 
-          echo ::set-env name=FILE_SUFFIX::"$(echo "$TAG" | tr + -)-${{ matrix.arch }}"
+          echo "FILE_SUFFIX=$(echo "$TAG" | tr + -)-${{ matrix.arch }}" >>"$GITHUB_ENV"
 
       # GOARCH => arm|arm64
       # GOARM  => 6|7
@@ -68,8 +68,8 @@ jobs:
           ARCH: ${{ matrix.arch }}
         run: |
           GOARCH="${ARCH%32v?}"
-          echo ::set-env name=GOARCH::"${GOARCH%v8}"
-          echo ::set-env name=GOARM::"$(echo "$ARCH" | sed -En 's|^arm32v([6-7])$|\1|p')"
+          echo "GOARCH=${GOARCH%v8}"                                      >>"$GITHUB_ENV"
+          echo "GOARM=$(echo "$ARCH" | sed -En 's|^arm32v([6-7])$|\1|p')" >>"$GITHUB_ENV"
 
       - name: Print ENV VARs set above
         run: |
@@ -189,19 +189,18 @@ jobs:
     steps:
       - name: Setup environment
         run: |
-          echo ::set-env name=SLUG::"$(echo ${GITHUB_REPOSITORY,,} | sed 's/docker-//')"
+          (
+            echo "SLUG=${GITHUB_REPOSITORY,,}" | sed 's|docker-||'
+            echo "TAG=$(echo   "$GITHUB_REF"   | sed -E "s|$TAG_FMT|\1|")"
+            echo "BUILD=$(echo "$GITHUB_REF"   | sed -E "s|$TAG_FMT|\5|")"
 
-          echo ::set-env name=TAG::"$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\1|")"
+            VERSION="$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\2|")"
+            VARIANT="$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\4|")"
 
-          VERSION="$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\2|")"
-          echo ::set-env name=VERSION::"$VERSION"
-
-          VARIANT="$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\4|")"
-          echo ::set-env name=VARIANT::"$VARIANT"
-
-          echo ::set-env name=BUILD::"$(echo "$GITHUB_REF" | sed -E "s|$TAG_FMT|\5|")"
-
-          echo ::set-env name=BASE_TAG::"$VERSION${VARIANT:+-$VARIANT}"
+            echo "VERSION=$VERSION"
+            echo "VARIANT=$VARIANT"
+            echo "BASE_TAG=$VERSION${VARIANT:+-$VARIANT}"
+          ) >>"$GITHUB_ENV"
 
       - name: Print just set ENV VARs
         run: |
@@ -286,7 +285,7 @@ jobs:
             "$DIR" \
             "$VARIANT")"
 
-          echo ::set-env name=VARIANT_NOTE::"$(printf ' and has been build in [`%s`](%s) variant' "$VARIANT" "$URL")"
+          echo "VARIANT_NOTE=$(printf ' and has been build in [`%s`](%s) variant' "$VARIANT" "$URL")" >>"$GITHUB_ENV"
 
       - name: Upload binaries to Github Release
         uses: meeDamian/github-release@2.0

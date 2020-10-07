@@ -50,8 +50,8 @@ jobs:
           ARCH: ${{ matrix.arch }}
         run: |
           GOARCH="${ARCH%32v?}"
-          echo ::set-env name=GOARCH::"${GOARCH%v8}"
-          echo ::set-env name=GOARM::"$(echo "$ARCH" | sed -En 's|^arm32v([6-7])$|\1|p')"
+          echo "GOARCH=${GOARCH%v8}"                                      >>"$GITHUB_ENV"
+          echo "GOARM=$(echo "$ARCH" | sed -En 's|^arm32v([6-7])$|\1|p')" >>"$GITHUB_ENV"
 
       - name: Build ${{ env.APP }}
         run: >

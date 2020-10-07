@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Setup Environment
-        run: echo ::set-env name=SLUG::"$(echo ${GITHUB_REPOSITORY,,} | sed 's/docker-//')"
+        run: echo "SLUG=${GITHUB_REPOSITORY,,}" | sed 's|docker-||' >>"$GITHUB_ENV"
 
       - name: Sync README.md and Description to Docker Hub
         uses: meeDamian/sync-readme@v1.0.6
