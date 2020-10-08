@@ -98,10 +98,11 @@ Then to start lnd, run:
 
 ```bash
 # Create a folder called ~/.lnd
-mkdir ~/.lnd
+mkdir -p $HOME/.lnd/
 # Then copy a config file into ~/.lnd
 # A sample config file is available from the LND upstream
 # https://github.com/lightningnetwork/lnd/blob/master/sample-lnd.conf
+wget -qO $HOME/.lnd/lnd.conf https://raw.githubusercontent.com/lightningnetwork/lnd/v0.11.1-beta/sample-lnd.conf
 
 # Run docker
 docker run  -it  --rm  --detach \
