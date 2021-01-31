@@ -54,6 +54,7 @@ This repo builds [`lnd`] in a completely reproducible, and auditable way, and pa
 
 > **NOTE:** For an always up-to-date list see: https://hub.docker.com/r/lncm/lnd/tags
 
+* `v0.12.0` `v0.12.0-monitoring` `v0.12.0-experimental` `v0.12.0-etcd`
 * `v0.11.1` `v0.11.1-monitoring` `v0.11.1-experimental` `v0.11.1-etcd`
 * `v0.11.0` `v0.11.0-monitoring` `v0.11.0-experimental` `v0.11.0-etcd`
 * `v0.10.4` `v0.10.4-monitoring` `v0.10.4-experimental`
