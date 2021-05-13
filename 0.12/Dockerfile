@@ -58,7 +58,8 @@ RUN mkdir -p /go/src/
 
 # Fetch lnd source code
 RUN cd /go/src/ && \
-    git clone  -b "$VERSION"  --depth=1  https://github.com/lightningnetwork/lnd .
+    git clone https://github.com/lightningnetwork/lnd .
+RUN cd /go/src/ && git checkout "$VERSION"
 
 WORKDIR /go/src/
 
@@ -66,8 +67,8 @@ WORKDIR /go/src/
 #   NOTE: The fallback condition is a hack around @Roasbeef's "key hygiene".  A manual attempt at accepting expired keys
 #       through git verify-tag; What can possibly go wrong? 😅
 #       More: https://github.com/lightningnetwork/lnd/issues/3507#issuecomment-532414524
-RUN git verify-tag "$VERSION" || \
-    { git verify-tag --raw "$VERSION" 2>&1 | grep EXPKEYSIG && echo "Accepting valid signature with an expired key!"; }
+# RUN git verify-tag "$VERSION" || \
+#     { git verify-tag --raw "$VERSION" 2>&1 | grep EXPKEYSIG && echo "Accepting valid signature with an expired key!"; }
 
 # NOTE: needed to have deterministic builds
 RUN go mod edit -go=1.15
