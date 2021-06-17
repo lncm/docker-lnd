@@ -1,0 +1,25 @@
+diff --git Dockerfile Dockerfile
+index 9ae5e1e..c63bd6b 100644
+--- Dockerfile
++++ Dockerfile
+@@ -24,7 +24,7 @@ ARG PKG=github.com/lightningnetwork/lnd
+ ARG TAGS_BASE="autopilotrpc signrpc walletrpc chainrpc invoicesrpc watchtowerrpc"
+ 
+ # Added by yours truly (@lncm)
+-ARG TAGS_EXTRA=""
++ARG TAGS_EXTRA="monitoring"
+ 
+ 
+ #
+@@ -253,5 +253,11 @@ VOLUME $DIR/.lnd/
+ # Expose lnd ports (rest, p2p, watchtower, rpc respectively)
+ EXPOSE  8080  9735  9911  10009
+ 
++# Expose monitoring/Prometheus port
++EXPOSE 8989
++
+ # Specify the start command and entrypoint as the lnd daemon
+ ENTRYPOINT ["/usr/local/bin/lnd"]
++
++# Okay to hardcode them here, as it's in a variant that specifically wants Prometheus
++CMD ["--prometheus.enable", "--prometheus.listen=0.0.0.0:8989"]
