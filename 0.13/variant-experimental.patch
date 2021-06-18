@@ -1,0 +1,13 @@
+diff --git Dockerfile Dockerfile
+index 9ae5e1e..ba9d720 100644
+--- Dockerfile
++++ Dockerfile
+@@ -24,7 +24,7 @@ ARG PKG=github.com/lightningnetwork/lnd
+ ARG TAGS_BASE="autopilotrpc signrpc walletrpc chainrpc invoicesrpc watchtowerrpc"
+ 
+ # Added by yours truly (@lncm)
+-ARG TAGS_EXTRA=""
++ARG TAGS_EXTRA="experimental"
+ 
+ 
+ #
