@@ -156,7 +156,9 @@ In case of a patch release (v0.0.X), it's enough to edit `VERSION` variable in a
 Ex. If `lnd` gets updated from `v0.6.0-beta` to `v0.6.1-beta`, it's _usually_ enough to open `0.6/Dockerfile`, update [this line] with the new tag, commit, and run:
 
 ```shell script
-./scripts/new-release.sh v0.6.1
+./scripts/new-release.sh v0.13.0
+# in case of other patches
+./scripts/new-release.sh v0.13.0 experimental
 ```
 
 > **NOTE:** The `new-release.sh` scripts ensures that correct version is set in the relevant `Dockerfile`, as well as that correct build tag is used.
