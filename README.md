@@ -1,3 +1,111 @@
+# This project is deprecated for [lightning labs lnd containers](https://hub.docker.com/r/lightninglabs/lnd/tags)
+
+Upgrade according
+
+## Sample docker compose
+
+```
+version: '3.8'
+services:
+        web:
+                image: nginx:1.17.8
+                container_name: web
+                volumes:
+                        - ${PWD}/nginx:/etc/nginx
+                restart: on-failure
+                ports:
+                    - "80:80"
+                stop_grace_period: 30s
+                networks:
+                    net:
+                        ipv4_address: 10.254.1.2
+        bitcoin:
+                image: lncm/bitcoind:v0.21.0
+                container_name: bitcoin
+                volumes:
+                        - ${PWD}/bitcoin:/root/.bitcoin
+                        - ${PWD}/bitcoin:/data/.bitcoin
+                        - ${PWD}/bitcoin:/data/bitcoin
+                restart: on-failure
+                ports:
+                    - "8333:8333"
+                    - "8332:8332"
+                stop_grace_period: 20m30s
+                networks:
+                    net:
+                        ipv4_address: 10.254.2.2
+        lnd:
+                image: lightninglabs/lnd:v0.13.1-beta@sha256:f26ddbbea3f7bad45d994e6258b8198acaebf65e575eedf2a566d04f0c1fb9d9
+                user: 1000:1000
+                container_name: lnd
+                volumes:
+                        - ${PWD}/lnd:/data/.lnd
+                        - ${PWD}/lnd:/root/.lnd
+                        - ${PWD}/bitcoin:/root/.bitcoin
+                        - ${PWD}/bitcoin:/data/.bitcoin
+                        - ${PWD}/secrets/lnd-password.txt:/data/.lnd/walletpassword
+                        - ${PWD}/secrets/lnd-password.txt:/root/.lnd/walletpassword
+                restart: on-failure
+                ports:
+                    - "9735:9735"
+                    - "10009:10009"
+                environment:
+                    HOME: /data
+                depends_on: [ bitcoin, web ]
+                stop_grace_period: 10m30s
+                networks:
+                    net:
+                        ipv4_address: 10.254.2.3
+        invoicer:
+                image: "lncm/invoicer:v0.8.1"
+                container_name: invoicer
+                depends_on: [ bitcoin, lnd ]
+                restart: on-failure
+                stop_grace_period: 30s
+                volumes:
+                        - "${PWD}/invoicer:/data"
+                        - "${PWD}/lnd:/lnd"
+                networks:
+                    net:
+                        ipv4_address: 10.254.2.4
+        neutrino-switcher:
+                image: "lncm/neutrino-switcher:1.0.4"
+                container_name: neutrino-switcher
+                depends_on: [ lnd, bitcoin ]
+                restart: always
+                volumes:
+                    - "${PWD}/lnd:/lnd"
+                    - "${PWD}/secrets:/secrets"
+                    - "${PWD}/statuses:/statuses"
+                    - "/var/run/docker.sock:/var/run/docker.sock"
+                environment:
+                    JSONRPCURL: http://10.254.2.2:8332
+                    LND_CONTAINER_NAME: lnd
+                    SLEEPTIME: 43200
+                networks:
+                    net:
+                        ipv4_address: 10.254.2.6
+        tor:
+                image: "lncm/tor:0.4.6.7@sha256:472c8d1265679e7cfd641edcbc44ec2fa0e500f6929bd8dc1f4811feffcfefaa"
+                container_name: tor
+                restart: on-failure
+                volumes:
+                    - "${PWD}/tor/torrc:/etc/tor/torrc"
+                    - "${PWD}/tor/data:/var/lib/tor/"
+                    - "${PWD}/tor/run:/var/run/tor/"
+                networks:
+                    net:
+                        ipv4_address: 10.254.1.3
+
+networks:
+    net:
+        ipam:
+            driver: default
+            config:
+                - subnet: 10.254.0.0/16
+
+```
+
 lncm/lnd
 ========
 
