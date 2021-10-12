@@ -2,14 +2,14 @@
 # If the binaries are the same, one is compressed, and copied to the `final` stage
 
 # lnd version to be build
-ARG VERSION=v0.13.0-beta
+ARG VERSION=v0.13.3-beta
 
 # Target CPU archtecture of built lnd binary
 ARG ARCH
 
 # Define default versions so that they don't have to be repreated throughout the file
-ARG VER_GO=1.15
-ARG VER_ALPINE=3.12
+ARG VER_GO=1.17
+ARG VER_ALPINE=3.14
 
 ARG USER=lnd
 ARG DIR=/data
@@ -40,14 +40,15 @@ ENV KEYBASE_USER1=roasbeef
 ENV KEYBASE_USER2=bitconner
 
 # roasbeef and conner keys
-ENV KEYS E4D85299674B2D31FAA1892E372CBD7633C61696 9C8D61868A7C492003B2744EE7D737B67FA592C7
+ENV KEYS E4D85299674B2D31FAA1892E372CBD7633C61696 9C8D61868A7C492003B2744EE7D737B67FA592C7 F4FC70F07310028424EFC20A8E4256593F177720
 # First, try to import key currently on @roasbeef's keybase account into GPG,
 # Second, also try to fetch that key from keyservers (in case it's not his key, or he already discarded it…).
 #   This command doesn't stop the flow on error, and
 #   Key verification happens in the next step
 # Import keys from keybase
 RUN wget -qO- "https://keybase.io/$KEYBASE_USER1/pgp_keys.asc" | gpg --import && \
-    wget -qO- "https://keybase.io/$KEYBASE_USER2/pgp_keys.asc" | gpg --import
+    wget -qO- "https://keybase.io/$KEYBASE_USER2/pgp_keys.asc" | gpg --import && \
+    gpg --recv-key F4FC70F07310028424EFC20A8E4256593F177720
 
 
 # Print imported keys, but also ensure there's no other keys in the system
@@ -70,7 +71,7 @@ RUN git verify-tag "$VERSION" || \
     { git verify-tag --raw "$VERSION" 2>&1 | grep EXPKEYSIG && echo "Accepting valid signature with an expired key!"; }
 
 # NOTE: needed to have deterministic builds
-RUN go mod edit -go=1.15
+RUN go mod edit -go=1.17
 
 RUN go mod tidy
 
